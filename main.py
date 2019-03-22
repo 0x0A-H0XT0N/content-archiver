@@ -22,13 +22,14 @@ def download_video(url, path=str(Path.home())):
     YouTube(url).streams.first().download(path)
 
 
-
-
-
 if __name__ == "__main__":
     # TODO
     video_url = str(input("Video url to download: "))
-    path_option = str(input("Download to a different path? [y/N]: "))
-    if path_option.lower() == "y" or "yes":
-        path_location = str(input("Path to download: "))
+    path_location = str(input("Full path to download (blank is default (home directory): "))
+    print(path_location)
+
+    if path_location != "":
+        download_video(video_url, path_location)
+    else:
+        download_video(video_url)
 
