@@ -11,7 +11,7 @@
 # TODO: add choose option for format when downloading
 # TODO: add menu and options
 
-from pytube import YouTube
+from pytube import YouTube, Playlist
 from pathlib import Path
 from progress.bar import IncrementalBar
 import os
