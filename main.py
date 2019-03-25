@@ -4,21 +4,21 @@
 #  ██║╚██╔╝██║██║   ██║  ██║   ██║   ██║██║███╗██║    ██╔══██║██╔══██╗██║     ██╔══██║██║╚██╗ ██╔╝██╔══╝
 #  ██║ ╚═╝ ██║╚██████╔╝  ██║   ╚██████╔╝╚███╔███╔╝    ██║  ██║██║  ██║╚██████╗██║  ██║██║ ╚████╔╝ ███████╗
 #  ╚═╝     ╚═╝ ╚═════╝   ╚═╝    ╚═════╝  ╚══╝╚══╝     ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝
+# https://github.com/PhoenixK7PB/mgtow-archive
 #
-
-
+# TODO: handling path for windows machines (home path)
+# TODO: make a dominant "path" option using JSON
+# TODO: printing filesize (MB) of video before downloading
+# TODO: make callback functions for completed downloads,
+#  displaying remaining videos (if channel or playlist), time elapsed
 # TODO: make one more advanced progress bar
 # TODO: add choose option for format when downloading
 # TODO: add menu and options
 # TODO: handle exceptions from pytube
-# TODO: make callback functions for completed downloads,
-#  displaying remaining videos (if channel or playlist), time elapsed
 #  and making a file handler function for moving and etc
 # TODO: make a list of downloaded video, when updating use data list for
 #  not repeating downloads
-# TODO: printing filesize (MB) of video before downloading
 # TODO: make a max of video length for downloading using yt.lenght
-# TODO: make a clear func for returning or after finishing a download
 # TODO: make a "Config" file for storing path and downloaded channels
 #  (last update, total videos, etc)
 # TODO: use colorama for font color
@@ -30,9 +30,43 @@ from progress.bar import IncrementalBar
 from pathlib import Path
 from time import sleep
 import os
+import json
 
 affirmative_choice = ["y", "yes", "s", "sim", "yeah", "yah", "ya"]
 negative_choice = ["n", "no", "nao", "na", "nop", "nah"]
+
+
+class Json:
+    """
+    Handle JSON requests.
+    """
+    def encode(data, write_filename):
+        """
+        Encode a obj (if available) to a file
+        Do NOT handle exceptions or errors
+        :param data: Data obj to write on the file, should be compatible with JSON
+        :param write_filename: Name of the file to write
+        Should have ".json" at the end.
+        :return: Nothing.
+        """
+        with open(write_filename, "w") as write_file:
+            json.dump(data, write_file)
+
+    def decode(read_filename, return_content=1):
+        """
+        Read a .json file and transfer the data to a global variable
+        :param read_filename: Name of the file to be read, NEED the .json at the end
+        :param return_content:  1 (default) for not returning the content inside the json file
+                                0 for returning the content at the end
+        :return: Make a global variable called "json_decode", all content in there
+        If return_content is 1, does NOT return anything
+        If return_content is 0, DOES return the content
+        """
+        global json_decode
+        with open(read_filename) as json_data:
+            json_decode = json.load(json_data)
+            if return_content == 0:
+                return json_decode
 
 
 def clear():
@@ -75,6 +109,43 @@ def show_menu():
     print("Press ENTER to exit")
 
 
+def get_path():
+    """
+    Should get a "path" for storing the downloaded content
+    Uses JSON for getting the variable,
+    If not data could be found, try to create a JSON file with it,
+    The can input where should the data be stored
+    Default path (if no input) the user home,
+    The user can change it before creation and on the main menu
+    :return: Should make a global variable called "path",
+    Raise a error if could not get the "path"
+    """
+    try:
+        Json.decode("path.json")
+        # TODO: MAKE PATH GLOBAL
+    except FileNotFoundError:
+        clear()
+        print("No path detected...")
+        path_choice = str(input("Do you want to make a path? [Y/n]\n>:"))
+        if path_choice.lower() in negative_choice:
+            clear()
+            print("User denied. Exiting routine.")
+            clear()
+            exit()
+        clear()
+        path_name = str(input("Type the full path. Press enter to use your home path.\n>:"))
+        if path_name == "":
+            clear()
+            Json.encode(str(Path.home()), "path.json")
+        else:
+            clear()
+            Json.encode(path_name,"path.json")
+        print("Path created.")
+        sleep(1)
+        clear()
+        # TODO: MAKE PATH GLOBAL
+
+
 def make_bar(youtube_obj, filesize, title):
     """
     make a bar object, need filesize for bar progress,
@@ -90,7 +161,6 @@ def make_bar(youtube_obj, filesize, title):
 def show_progress_bar(stream, chunk, file_handle, bytes_remaining):
     try:
         global last_bytes
-        pass
     except NameError:
         pass
     exit()
@@ -187,7 +257,7 @@ if __name__ == "__main__":
                 continue
             clear()
             choice = input("Founded %d videos... Continue? [Y/n]\n>:" % (len(parsed_links)))
-            if choice in negative_choice:
+            if choice.lower() in negative_choice:
                 clear()
                 print("Going back...")
                 sleep(1)
