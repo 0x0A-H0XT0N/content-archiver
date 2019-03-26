@@ -130,6 +130,7 @@ def get_path():
         if path_choice.lower() in negative_choice:
             clear()
             print("User denied. Exiting routine.")
+            sleep(2)
             clear()
             exit()
         clear()
