@@ -24,6 +24,7 @@
 # TODO: use colorama for font color
 # TODO: pass everything to yt-dl, currently pytube
 #  does not support age restricted videos.
+# TODO: re-write exit functions, put clear() inside exit() e.g. exit(clear)
 
 from pytube import YouTube, Playlist
 from progress.bar import IncrementalBar
@@ -63,8 +64,10 @@ class Json:
         If return_content is 0, DOES return the content
         """
         global json_decode
+
         with open(read_filename) as json_data:
             json_decode = json.load(json_data)
+
             if return_content == 0:
                 return json_decode
 
@@ -93,58 +96,52 @@ def show_menu():
     print(" ██║ ╚═╝ ██║╚██████╔╝  ██║   ╚██████╔╝╚███╔███╔╝")
     print(" ╚═╝     ╚═╝ ╚═════╝   ╚═╝    ╚═════╝  ╚══╝╚══╝  ")
     print("")
-    print("   █████╗ ██████╗  ██████╗██╗  ██╗██╗██╗   ██╗███████╗")
+    print("    █████╗ ██████╗  ██████╗██╗  ██╗██╗██╗   ██╗███████╗")
     print("   ██╔══██╗██╔══██╗██╔════╝██║  ██║██║██║   ██║██╔════╝")
     print("   ███████║██████╔╝██║     ███████║██║██║   ██║█████╗")
     print("   ██╔══██║██╔══██╗██║     ██╔══██║██║╚██╗ ██╔╝██╔══╝")
     print("   ██║  ██║██║  ██║╚██████╗██║  ██║██║ ╚████╔╝ ███████╗")
     print("   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝")
     print("")
-    print("1) Download a Channel/playlist")
-    print("2) Download a Single video")
-    print("3) Check for new videos")
-    print("4) Set download path")
-    print("5) See downloaded channels")
-    print("6) Make a torrent")
-    print("Press ENTER to exit")
+    print("1) Download a Channel/playlist       |")
+    print("2) Download a Single video           |")
+    print("3) Check for new videos              |  path) Set download path")
+    print("4) See downloaded channels           |")
+    print("5) Make a torrent                    |")
+    print("0) Exit                              |")
 
 
 def get_path():
     """
     Should get a "path" for storing the downloaded content
-    Uses JSON for getting the variable,
+    Uses json_handler ,
     If not data could be found, try to create a JSON file with it,
-    The can input where should the data be stored
     Default path (if no input) the user home,
     The user can change it before creation and on the main menu
-    :return: Should make a global variable called "path",
-    Raise a error if could not get the "path"
+    :return: Make a global variable called "path",
     """
     try:
-        Json.decode("path.json")
-        # TODO: MAKE PATH GLOBAL
+        global path
+        path = Json.decode("path.json", return_content=0)
+
     except FileNotFoundError:
         clear()
-        print("No path detected...")
-        path_choice = str(input("Do you want to make a path? [Y/n]\n>:"))
-        if path_choice.lower() in negative_choice:
-            clear()
-            print("User denied. Exiting routine.")
-            sleep(2)
-            clear()
-            exit()
-        clear()
-        path_name = str(input("Type the full path. Press enter to use your home path.\n>:"))
+        print("No path detected... Making one for you.")
+        path_name = str(input("Type the (full) path.... Press enter to use your home path.\n>:"))
+
         if path_name == "":
             clear()
             Json.encode(str(Path.home()), "path.json")
+
         else:
             clear()
             Json.encode(path_name,"path.json")
-        print("Path created.")
-        sleep(1)
+
+        path = Json.decode("path.json", return_content=0)
+
+        print("Path is:", path)
+        input("Type something to continue...")
         clear()
-        # TODO: MAKE PATH GLOBAL
 
 
 def make_bar(youtube_obj, filesize, title):
@@ -162,22 +159,27 @@ def make_bar(youtube_obj, filesize, title):
 def show_progress_bar(stream, chunk, file_handle, bytes_remaining):
     try:
         global last_bytes
+
     except NameError:
         pass
-    exit()
+
     bytes_finished = yt.streams.first().filesize - bytes_remaining
+
     try:
         bar.next(last_bytes - bytes_remaining)
+
     except NameError:
         bar.next(bytes_finished)
+
     last_bytes = bytes_remaining
+
     if bytes_remaining == 0:
         del last_bytes, bytes_remaining, bytes_finished
         bar.finish()
         print()
 
 
-def download_video(youtube_obj, path=str(Path.home())):
+def download_video(youtube_obj):
     """
 
     :param youtube_obj: YouTube(url) correspondent
@@ -186,6 +188,7 @@ def download_video(youtube_obj, path=str(Path.home())):
     if path does not exist, it's created.
     :return: Nothing # TODO change to call on end (register_on_complete_callback) and print stats
     """
+    get_path()
     if not os.path.exists(path):
         os.makedirs(path)
     make_bar(youtube_obj, youtube_obj.streams.first().filesize, youtube_obj.title)
@@ -214,23 +217,39 @@ if __name__ == "__main__":
     maintainer = True
 
     while maintainer:
+        clear()
         show_menu()  # show menu
         choice = input("\n>: ")  # wait for user input
 
         if choice == "":
             clear()
-            exit()
+            continue
 
         try:
             choice = int(choice)  # try to convert choice(str) to choice(int),
             # this is needed because the normal input is a str
 
         except ValueError:  # if the int() parser cant convert, raises a ValueError, this take care if it
-            clear()  # clear the screen
-            print("Numbers only.")
-            input("Press any key to go back...\n")  # wait for user input
-            clear()
-            continue  # goes right back in the loop, skip the "else:" later on, save time
+            if choice.lower() == "path":
+                clear()
+                print("Change path selected... Press enter to return.\n")
+                get_path()
+                print("Your current path is: ", path)
+                new_path = str(input("\nType your new path.\n>:"))
+                if new_path == "":
+                    clear()
+                    continue
+                else:
+                    if not os.path.exists(new_path):
+                        os.makedirs(new_path)
+                    Json.encode(new_path, "path.json")
+                    clear()
+                    continue
+            else:
+                clear()  # clear the screen
+                input("Press any key to go back...\n")  # wait for user input
+                clear()
+                continue  # goes right back in the loop, skip the "else:" later on, save time
 
         if choice == 1:
             clear()
@@ -286,7 +305,9 @@ if __name__ == "__main__":
             "Menu 5 has been selected"
             ## You can add your code or functions here
             loop = False  # This will make the while loop to end as not value of loop is set to False
+        elif choice == 0:
+            exit(clear())
         else:
             clear()
-            input("No option located. Press any key to go back...")
+            input("Press any key to go back...\n")  # wait for user input
             clear()
