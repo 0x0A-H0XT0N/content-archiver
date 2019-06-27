@@ -7,13 +7,11 @@
 # https://github.com/PhoenixK7PB/mgtow-archive
 #
 # TODO: handling path for windows machines (home path)
-# TODO: make a dominant "path" option using JSON
 # TODO: printing filesize (MB) of video before downloading
 # TODO: make callback functions for completed downloads,
 #  displaying remaining videos (if channel or playlist), time elapsed
 # TODO: make one more advanced progress bar
 # TODO: add choose option for format when downloading
-# TODO: add menu and options
 # TODO: handle exceptions from pytube
 #  and making a file handler function for moving and etc
 # TODO: make a list of downloaded video, when updating use data list for
@@ -26,10 +24,8 @@
 #  does not support age restricted videos.
 # TODO: re-write exit functions, put clear() inside exit() e.g. exit(clear)
 
-from pytube import YouTube, Playlist
-from progress.bar import IncrementalBar
+import youtube_dl
 from pathlib import Path
-from time import sleep
 import os
 import json
 
@@ -103,120 +99,208 @@ def show_menu():
     print("   ██║  ██║██║  ██║╚██████╗██║  ██║██║ ╚████╔╝ ███████╗")
     print("   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝")
     print("")
-    print("1) Download a Channel/playlist       |")
-    print("2) Download a Single video           |")
-    print("3) Check for new videos              |  path) Set download path")
-    print("4) See downloaded channels           |")
-    print("5) Make a torrent                    |")
-    print("0) Exit                              |")
+    print("1) Download video/playlist/channel   |  conf) Configure yt-dl        ")
+    print("2) Check for new videos              |  path) Set download path      ")
+    print("3) See channels                      |                               ")
+    print("4) Add channel                       |                               ")
+    print("5) Make a torrent                    |                               ")
+    print("0) Exit                              |                               ")
+
+
+def make_path():
+    clear()
+    print("Creating a JSON file containing the path...\n")
+    path_name = str(input("Type the full path for storing the videos... Enter to use your home path.\n>:"))
+
+    if path_name == "":
+        clear()
+        if not os.path.exists(str(Path.home())):
+            os.makedirs(str(Path.home()))
+        Json.encode(str(Path.home()), "path.json")
+
+    else:
+        clear()
+        if not os.path.exists(path_name):
+            os.makedirs(path_name)
+        Json.encode(path_name, "path.json")
+
+    global path
+    path = Json.decode("path.json", return_content=0)
+
+    print("New path is:", path)
+    input("\nEnter to continue.\n")
+    clear()
 
 
 def get_path():
     """
     Should get a "path" for storing the downloaded content
     Uses json_handler ,
-    If not data could be found, try to create a JSON file with it,
-    Default path (if no input) the user home,
-    The user can change it before creation and on the main menu
+    If not data could be found, calls make_path()
     :return: Make a global variable called "path",
     """
     try:
         global path
         path = Json.decode("path.json", return_content=0)
+        return path
 
     except FileNotFoundError:
-        clear()
-        print("No path detected... Making one for you.")
-        path_name = str(input("Type the (full) path.... Press enter to use your home path.\n>:"))
-
-        if path_name == "":
-            clear()
-            Json.encode(str(Path.home()), "path.json")
-
-        else:
-            clear()
-            Json.encode(path_name,"path.json")
-
-        path = Json.decode("path.json", return_content=0)
-
-        print("Path is:", path)
-        input("Type something to continue...")
-        clear()
+        make_path()
+        return path
 
 
-def make_bar(youtube_obj, filesize, title):
-    """
-    make a bar object, need filesize for bar progress,
-    :param filesize: filesize of video
-    :return: nothing.
-    """
-    global bar
-    global yt
-    yt = youtube_obj
-    bar = IncrementalBar("[download] " + title, max=filesize, suffix='%(percent).2f%%')
-
-
-def show_progress_bar(stream, chunk, file_handle, bytes_remaining):
-    try:
-        global last_bytes
-
-    except NameError:
-        pass
-
-    bytes_finished = yt.streams.first().filesize - bytes_remaining
-
-    try:
-        bar.next(last_bytes - bytes_remaining)
-
-    except NameError:
-        bar.next(bytes_finished)
-
-    last_bytes = bytes_remaining
-
-    if bytes_remaining == 0:
-        del last_bytes, bytes_remaining, bytes_finished
-        bar.finish()
-        print()
-
-
-def download_video(youtube_obj):
+def change_path():
     """
 
-    :param youtube_obj: YouTube(url) correspondent
-    :param path: (optional) download location for saving the file,
-    default one is current user home directory.
-    if path does not exist, it's created.
-    :return: Nothing # TODO change to call on end (register_on_complete_callback) and print stats
+    :return:
     """
-    get_path()
-    if not os.path.exists(path):
-        os.makedirs(path)
-    make_bar(youtube_obj, youtube_obj.streams.first().filesize, youtube_obj.title)
-    youtube_obj.register_on_progress_callback(show_progress_bar)
-    youtube_obj.streams.first().download(path)
-
-
-def playlist_download(url_list):
-    for url_pl in url_list:
-        yt_pl = YouTube(url_pl)
-        download_video(yt_pl)
-    input("Finished... Press any key to go back.")
     clear()
+    print("Change path selected...\n")
+    get_path()
+    print("Your current path is: ", path)
+    new_path = str(input("\nType your new path... Enter to return.\n>:"))
+    if new_path == "":
+        clear()
+        return
+    else:
+        if not os.path.exists(new_path):
+            os.makedirs(new_path)
+        Json.encode(new_path, "path.json")
+        clear()
+        print("New path is:", path)
+        input("\nEnter to continue.\n")
+        clear()
+        return
 
-# yt = YouTube(str(input("Video url to download: ")))
-# path_location = str(input("Full path to save file (blank is home directory): "))
-#
-# if path_location != "":
-#     download_video(yt, path_location)
-# else:
-#     download_video(yt)
-# print()
+
+youtube_config = {
+    'format':                   'bestaudio/best',   # Video format code. See options.py for more information.
+    'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
+    'restrictfilenames':        True,               # Do not allow "&" and spaces in file names
+    'no_warnings':              True,               # Do not print out anything for warnings.
+    'ignoreerrors':             True,               # Do not stop on download errors.
+    'nooverwrites':             True,               # Prevent overwriting files.
+    'writedescription':         True,              # Write the video description to a .description file
+    'writethumbnail':           True,              # Write the thumbnail image to a file
+    'writeautomaticsub':        False,              # Write the automatically generated subtitles to a file
+    'verbose':                  False,              # Print additional info to stdout.
+    'quiet':                    False,              # Do not print messages to stdout.
+    'simulate':                 False,              # Do not download the video files.
+    'skip_download':            False,              # Skip the actual download of the video file
+    'noplaylist':               False,              # Download single video instead of a playlist if in doubt.
+    'playlistrandom':           False,              # Download playlist items in random order.
+    'playlistreverse':          False,              # Download playlist items in reverse order.
+    'forceurl':                 False,              # Force printing final URL.
+    'forcetitle':               False,              # Force printing title.
+    'forceid':                  False,              # Force printing ID.
+    'forcethumbnail':           False,              # Force printing thumbnail URL.
+    'forcedescription':         False,              # Force printing description.
+    'forcefilename':            False,              # Force printing final filename.
+    'forceduration':            False,              # Force printing duration.
+    'forcejson':                False,              # Force printing info_dict as JSON.
+}
+youtube_default_config = {
+    'format':                   'bestaudio/best',   # Video format code. See options.py for more information.
+    'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
+    'restrictfilenames':        True,               # Do not allow "&" and spaces in file names
+    'no_warnings':              True,               # Do not print out anything for warnings.
+    'ignoreerrors':             True,               # Do not stop on download errors.
+    'nooverwrites':             True,               # Prevent overwriting files.
+    'writedescription':         True,              # Write the video description to a .description file
+    'writethumbnail':           True,              # Write the thumbnail image to a file
+    'writeautomaticsub':        False,              # Write the automatically generated subtitles to a file
+    'verbose':                  False,              # Print additional info to stdout.
+    'quiet':                    False,              # Do not print messages to stdout.
+    'simulate':                 False,              # Do not download the video files.
+    'skip_download':            False,              # Skip the actual download of the video file
+    'noplaylist':               False,              # Download single video instead of a playlist if in doubt.
+    'playlistrandom':           False,              # Download playlist items in random order.
+    'playlistreverse':          False,              # Download playlist items in reverse order.
+    'forceurl':                 False,              # Force printing final URL.
+    'forcetitle':               False,              # Force printing title.
+    'forceid':                  False,              # Force printing ID.
+    'forcethumbnail':           False,              # Force printing thumbnail URL.
+    'forcedescription':         False,              # Force printing description.
+    'forcefilename':            False,              # Force printing final filename.
+    'forceduration':            False,              # Force printing duration.
+    'forcejson':                False,              # Force printing info_dict as JSON.
+}
+
+
+def make_default_config():
+    Json.encode(youtube_default_config, "yt_config.json")
+    global yt_config
+    yt_config = Json.decode("yt_config.json", return_content=0)
+
+
+def apply_config():
+    Json.encode(youtube_config, "yt_config.json")
+    global yt_config
+    yt_config = Json.decode("yt_config.json", return_content=0)
+
+
+def get_config():
+    """
+    access the json configuration file and make a global variable called "yt_config"
+    :return: None
+    """
+    try:
+        global yt_config
+        yt_config = Json.decode("yt_config.json", return_content=0)
+    except FileNotFoundError:
+        make_default_config()
+
+
+def config_handler():
+    choice_maintainer = True
+    while choice_maintainer:
+        clear()
+        get_config()
+        print("Enter to return...\n")
+        print("Youtube-dl version: %s" % youtube_dl.update.__version__)
+        print("\napply) Apply your changes (from code to disk) using 'youtube_config'")
+        print("\nreset) Reset to default the config file for you")
+        print("\nsee) See the config file")
+        print("")
+        config_choice = str(input("\n>:"))
+        if config_choice == "":
+            return
+
+        elif config_choice.lower() == 'apply':
+            clear()
+            apply_config()
+            input("Config wrote down to disk... Enter to continue.\n")
+            return
+
+        elif config_choice.lower() == 'reset':
+            clear()
+            sure = str(input("Resetting the config file will wipe out all changes to it. Are you sure? [y/n]\n>:"))
+            if sure in affirmative_choice:
+                make_default_config()
+                continue
+            else:
+                continue
+
+        elif config_choice.lower() == 'see':
+            clear()
+            get_config()
+            print("Found %d options...\n")
+            for config in yt_config:
+                print("%s: %s" % (str(config), str(yt_config[config])))
+            input()
+
+
+def youtube_download(url):
+    youtube_dl.YoutubeDL(yt_config).download([url])
 
 
 if __name__ == "__main__":
     maintainer = True
 
     while maintainer:
+        clear()
+        get_config()
+        get_path()
         clear()
         show_menu()  # show menu
         choice = input("\n>: ")  # wait for user input
@@ -231,21 +315,14 @@ if __name__ == "__main__":
 
         except ValueError:  # if the int() parser cant convert, raises a ValueError, this take care if it
             if choice.lower() == "path":
-                clear()
-                print("Change path selected... Press enter to return.\n")
-                get_path()
-                print("Your current path is: ", path)
-                new_path = str(input("\nType your new path.\n>:"))
-                if new_path == "":
-                    clear()
-                    continue
-                else:
-                    if not os.path.exists(new_path):
-                        os.makedirs(new_path)
-                    Json.encode(new_path, "path.json")
-                    clear()
-                    continue
-            else:
+                change_path()
+                continue
+
+            elif choice.lower() == "conf":
+                config_handler()
+                continue
+
+            else:   # if user type something that != path, ignore and return to main menu
                 clear()  # clear the screen
                 input("Press any key to go back...\n")  # wait for user input
                 clear()
@@ -253,45 +330,16 @@ if __name__ == "__main__":
 
         if choice == 1:
             clear()
-            print("Download channel/playlist selected... Press enter to return.\n")
-            video_url = str(input("Video url to download: "))  # wait for user input,
+            print("Download video/playlist/channel selected... Press enter to return.\n")
+            video_url = str(input("Type URL to download.\n>: "))  # wait for user input,
 
             if video_url == "":  # validate user input,if it's empty, go to the menu
                 clear()
-                print("Going back...")
-                sleep(1)
-                clear()
                 continue
 
-            pl = Playlist(video_url)  # after validation make a Playlist() obj
-            sleep(0.5)
-            clear()
-            print("Searching for videos...")
-            try:
-                parsed_links = pl.parse_links()
-            except ValueError:
-                clear()
-                print("Unknown URL type... Going back.")
-                sleep(2)
-                clear()
-                continue
-            clear()
-            choice = input("Founded %d videos... Continue? [Y/n]\n>:" % (len(parsed_links)))
-            if choice.lower() in negative_choice:
-                clear()
-                print("Going back...")
-                sleep(1)
-                clear()
-                continue
-            else:
-                clear()
-                playlist_download(parsed_links)
+            youtube_download(video_url)
+            input("\n\nFinished. Enter to continue.\n\n")
 
-
-        elif choice == 2:
-            print
-            "Menu 2 has been selected"
-            ## You can add your code or functions here
         elif choice == 3:
             print
             "Menu 3 has been selected"
