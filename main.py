@@ -7,25 +7,22 @@
 # https://github.com/PhoenixK7PB/mgtow-archive
 #
 # TODO: handling path for windows machines (home path)
-# TODO: printing filesize (MB) of video before downloading
-# TODO: make callback functions for completed downloads,
-#  displaying remaining videos (if channel or playlist), time elapsed
 # TODO: make one more advanced progress bar
 # TODO: add choose option for format when downloading
-# TODO: handle exceptions from pytube
-#  and making a file handler function for moving and etc
 # TODO: make a list of downloaded video, when updating use data list for
 #  not repeating downloads
 # TODO: make a max of video length for downloading using yt.lenght
 # TODO: make a "Config" file for storing path and downloaded channels
 #  (last update, total videos, etc)
 # TODO: use colorama for font color
-# TODO: pass everything to yt-dl, currently pytube
-#  does not support age restricted videos.
-# TODO: re-write exit functions, put clear() inside exit() e.g. exit(clear)
+# TODO: Make a title for every "section" of the program (like lazy script) using 45 chars
+# like ------------------------------------------------------------
+# TODO: add a logger that saves every error and prints it at the end of the download
 
 import youtube_dl
 from pathlib import Path
+import signal
+import sys
 import os
 import json
 
@@ -81,6 +78,21 @@ def clear():
         os.system('clear')
 
 
+def signal_handler(signal, frame):
+    print("\n")
+    sys.exit(0)
+
+
+def wait_input():
+    clear()
+    input("Press any key to continue...")
+    clear()
+
+
+def exit_func():
+    exit(clear())
+
+
 def show_menu():
     """
     :return: menu banner with options
@@ -100,10 +112,8 @@ def show_menu():
     print("   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝")
     print("")
     print("1) Download video/playlist/channel   |  conf) Configure yt-dl        ")
-    print("2) Check for new videos              |  path) Set download path      ")
-    print("3) See channels                      |                               ")
-    print("4) Add channel                       |                               ")
-    print("5) Make a torrent                    |                               ")
+    print("2) Channels                          |  path) Set download path      ")
+    # print("4) Make a torrent                    |                               ")
     print("0) Exit                              |                               ")
 
 
@@ -173,7 +183,7 @@ def change_path():
         return
 
 
-youtube_config = {
+youtube_config = {      # --------------------CHANGE THIS!!!--------------------- #
     'format':                   'bestaudio/best',   # Video format code. See options.py for more information.
     'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
     'restrictfilenames':        True,               # Do not allow "&" and spaces in file names
@@ -252,8 +262,9 @@ def get_config():
 
 
 def config_handler():
-    choice_maintainer = True
-    while choice_maintainer:
+    config_maintainer = True
+
+    while config_maintainer:
         clear()
         get_config()
         print("Enter to return...\n")
@@ -290,6 +301,30 @@ def config_handler():
             input()
 
 
+def get_channels():
+    try:
+        global channels
+        channels = Json.decode("channels.json", return_content=0)
+
+    except FileNotFoundError:
+        clear()
+        input("No channels found... maybe add one?")
+        return False
+
+
+def add_channel(channel_name, channel_url):
+    try:
+        old_channels = Json.decode("channels.json", return_content=0)
+        old_channels[channel_name] = channel_url
+        Json.encode(old_channels, "channels.json")
+        get_channels()
+
+    except FileNotFoundError:
+        new_channel = {channel_name: channel_url}
+        Json.encode(new_channel, "channels.json")
+        get_channels()
+
+
 def youtube_download(url):
     youtube_dl.YoutubeDL(yt_config).download([url])
 
@@ -298,6 +333,7 @@ if __name__ == "__main__":
     maintainer = True
 
     while maintainer:
+        signal.signal(signal.SIGINT, signal_handler)
         clear()
         get_config()
         get_path()
@@ -330,7 +366,7 @@ if __name__ == "__main__":
 
         if choice == 1:
             clear()
-            print("Download video/playlist/channel selected... Press enter to return.\n")
+            print("--------------------------DOWNLOAD--------------------------")
             video_url = str(input("Type URL to download.\n>: "))  # wait for user input,
 
             if video_url == "":  # validate user input,if it's empty, go to the menu
@@ -340,22 +376,91 @@ if __name__ == "__main__":
             youtube_download(video_url)
             input("\n\nFinished. Enter to continue.\n\n")
 
+        elif choice == 2:
+            channel_maintainer = True
+
+            while channel_maintainer:
+                clear()
+                print("--------------------------CHANNELS--------------------------")
+                print("1) Search for new videos in every channel")
+                print("2) View channels")
+                print("3) Add a channel")
+                print("b) Go back")
+                channel_choice = input("\n>:")
+
+                try:
+                    channel_choice = int(channel_choice)
+
+                except ValueError:
+                    if channel_choice.lower() == "b":
+                        break
+                    else:
+                        wait_input()
+
+                if channel_choice == 1:
+                    clear()
+                    print("----------------------DOWNLOAD-CHANNELS---------------------")
+                    if get_channels() is False:
+                        continue
+
+                    print("Found %d channels...\n" % len(channels))
+                    download_channels_choice = str(input("All videos from all channels will be downloaded. "
+                                                         "Do you want to continue? [y/N]\n>:"))
+                    if download_channels_choice not in affirmative_choice:
+                        clear()
+                        continue
+
+                    clear()
+                    channel_count = 0
+                    for channel in channels:
+                        channel_count += 1
+                        print()
+                        print("     Channel %d of %d" % (channel_count, len(channels)))
+                        print("     Channel: %s" % channel)
+                        print("     URL: %s" % channels[channel])
+                        print()
+                        youtube_download(channels[channel])
+
+                elif channel_choice == 2:
+                    clear()
+                    if get_channels() is False:
+                        continue
+
+                    print("------------------------VIEW-CHANNELS-----------------------")
+                    print("Found %d channels...\n" % len(channels))
+                    count = 0
+
+                    for channel in channels:
+                        count += 1
+                        print("     %d) %s == %s" % (count, channel, channels[channel]))
+                    input("\nPress any key to continue...")
+                    # TODO add options to edit, remove and download specific channels
+
+                elif channel_choice == 3:
+                    add_channel_maintainer = True
+
+                    while add_channel_maintainer:
+                        clear()
+                        print("-------------------------ADD-CHANNEL------------------------")
+                        channel_name = str(input("Name of the channel?\n>:"))
+                        channel_url = str(input("\nFull channel url?\n>:"))
+                        add_channel(channel_name, channel_url)
+
+                        add_another_channel_choice = str(input("\nAdd another channel? [y/N]\n>:"))
+                        if add_another_channel_choice not in affirmative_choice:
+                            clear()
+                            break
+
         elif choice == 3:
-            print
-            "Menu 3 has been selected"
-            ## You can add your code or functions here
-        elif choice == 4:
             print
             "Menu 4 has been selected"
             ## You can add your code or functions here
-        elif choice == 5:
+        elif choice == 4:
             print
             "Menu 5 has been selected"
             ## You can add your code or functions here
             loop = False  # This will make the while loop to end as not value of loop is set to False
         elif choice == 0:
-            exit(clear())
+            exit_func()
         else:
-            clear()
-            input("Press any key to go back...\n")  # wait for user input
-            clear()
+            wait_input()
