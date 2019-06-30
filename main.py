@@ -28,7 +28,7 @@ import json
 
 affirmative_choice = ["y", "yes", "s", "sim", "yeah", "yah", "ya"]
 negative_choice = ["n", "no", "nao", "na", "nop", "nah"]
-
+founded_videos = 0
 
 class Json:
     """
@@ -117,6 +117,15 @@ def show_menu():
     print("0) Exit                              |                               ")
 
 
+def youtube_hooker(video):
+
+    print("\n   Status: %s" % video["status"])
+    print(video)
+    print("\n   Len: %d" % len(video))
+    input()
+    # TODO rewrite all this shittt
+
+
 def make_path():
     clear()
     print("Creating a JSON file containing the path...\n")
@@ -184,6 +193,9 @@ def change_path():
 
 
 youtube_config = {      # --------------------CHANGE THIS!!!--------------------- #
+
+    'progress_hooks': [youtube_hooker],     # DONT CHANGE
+
     'format':                   'bestaudio/best',   # Video format code. See options.py for more information.
     'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
     'restrictfilenames':        True,               # Do not allow "&" and spaces in file names
@@ -210,6 +222,9 @@ youtube_config = {      # --------------------CHANGE THIS!!!--------------------
     'forcejson':                False,              # Force printing info_dict as JSON.
 }
 youtube_default_config = {
+
+    'progress_hooks': [youtube_hooker],     # DONT CHANGE
+
     'format':                   'bestaudio/best',   # Video format code. See options.py for more information.
     'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
     'restrictfilenames':        True,               # Do not allow "&" and spaces in file names
