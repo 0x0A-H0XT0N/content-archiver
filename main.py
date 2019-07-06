@@ -25,10 +25,11 @@ import signal
 import sys
 import os
 import json
+import threading
 
 affirmative_choice = ["y", "yes", "s", "sim", "yeah", "yah", "ya"]
 negative_choice = ["n", "no", "nao", "na", "nop", "nah"]
-founded_videos = 0
+
 
 class Json:
     """
@@ -119,11 +120,14 @@ def show_menu():
 
 def youtube_hooker(video):
 
-    print("\n   Status: %s" % video["status"])
-    print(video)
-    print("\n   Len: %d" % len(video))
-    input()
-    # TODO rewrite all this shittt
+    if len(video) <= 4:
+        global founded_videos
+        founded_videos += 1
+        print("         FOUND ONE!!!")
+    if founded_videos >= 3:
+        print("EXITING CURRENT THREAD!")
+        # TODO
+
 
 
 def make_path():
@@ -194,8 +198,6 @@ def change_path():
 
 youtube_config = {      # --------------------CHANGE THIS!!!--------------------- #
 
-    'progress_hooks': [youtube_hooker],     # DONT CHANGE
-
     'format':                   'bestaudio/best',   # Video format code. See options.py for more information.
     'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
     'restrictfilenames':        True,               # Do not allow "&" and spaces in file names
@@ -221,9 +223,38 @@ youtube_config = {      # --------------------CHANGE THIS!!!--------------------
     'forceduration':            False,              # Force printing duration.
     'forcejson':                False,              # Force printing info_dict as JSON.
 }
-youtube_default_config = {
+
+yt_list_of_channels_config = {      # --------------------CHANGE THIS!!!--------------------- #
 
     'progress_hooks': [youtube_hooker],     # DONT CHANGE
+
+    'format':                   'bestaudio/best',   # Video format code. See options.py for more information.
+    'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
+    'restrictfilenames':        True,               # Do not allow "&" and spaces in file names
+    'no_warnings':              True,               # Do not print out anything for warnings.
+    'ignoreerrors':             False,               # Do not stop on download errors.
+    'nooverwrites':             True,               # Prevent overwriting files.
+    'writedescription':         True,              # Write the video description to a .description file
+    'writethumbnail':           True,              # Write the thumbnail image to a file
+    'writeautomaticsub':        False,              # Write the automatically generated subtitles to a file
+    'verbose':                  False,              # Print additional info to stdout.
+    'quiet':                    False,              # Do not print messages to stdout.
+    'simulate':                 False,              # Do not download the video files.
+    'skip_download':            False,              # Skip the actual download of the video file
+    'noplaylist':               False,              # Download single video instead of a playlist if in doubt.
+    'playlistrandom':           False,              # Download playlist items in random order.
+    'playlistreverse':          False,              # Download playlist items in reverse order.
+    'forceurl':                 False,              # Force printing final URL.
+    'forcetitle':               False,              # Force printing title.
+    'forceid':                  False,              # Force printing ID.
+    'forcethumbnail':           False,              # Force printing thumbnail URL.
+    'forcedescription':         False,              # Force printing description.
+    'forcefilename':            False,              # Force printing final filename.
+    'forceduration':            False,              # Force printing duration.
+    'forcejson':                False,              # Force printing info_dict as JSON.
+}
+
+youtube_default_config = {
 
     'format':                   'bestaudio/best',   # Video format code. See options.py for more information.
     'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
@@ -341,7 +372,21 @@ def add_channel(channel_name, channel_url):
 
 
 def youtube_download(url):
+    """
+    Download a channel using the normal config
+    :param url: url of the channel being downloaded
+    :return: nothing
+    """
     youtube_dl.YoutubeDL(yt_config).download([url])
+
+
+def youtube_channel_download(url):
+    """
+    Download a channel using the config for channels (calls a progress hooker)
+    :param url: url of the channel being downloaded
+    :return: nothing
+    """
+    youtube_dl.YoutubeDL(yt_list_of_channels_config).download([url])
 
 
 if __name__ == "__main__":
@@ -428,13 +473,18 @@ if __name__ == "__main__":
                     clear()
                     channel_count = 0
                     for channel in channels:
+                        global founded_videos
                         channel_count += 1
                         print()
                         print("     Channel %d of %d" % (channel_count, len(channels)))
                         print("     Channel: %s" % channel)
                         print("     URL: %s" % channels[channel])
                         print()
-                        youtube_download(channels[channel])
+                        founded_videos = 0
+                        threading.Thread(target=youtube_channel_download, args=(channels[channel],)).start()
+
+
+
 
                 elif channel_choice == 2:
                     clear()
