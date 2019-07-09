@@ -7,17 +7,17 @@
 # https://github.com/PhoenixK7PB/mgtow-archive
 #
 # TODO: handling path for windows machines (home path)
-# TODO: make one more advanced progress bar
 # TODO: add choose option for format when downloading
-# TODO: make a list of downloaded video, when updating use data list for
-#  not repeating downloads
-# TODO: make a max of video length for downloading using yt.lenght
 # TODO: make a "Config" file for storing path and downloaded channels
 #  (last update, total videos, etc)
 # TODO: use colorama for font color
-# TODO: Make a title for every "section" of the program (like lazy script) using 45 chars
-# like ------------------------------------------------------------
+# TODO: Make a title for every "section" of the program (like lazy script) using 60 chars
+#  like ------------------------------------------------------------
 # TODO: add a logger that saves every error and prints it at the end of the download
+# TODO: add torrent options
+# TODO: comment every function
+# TODO add options to edit, remove and download specific channels
+
 
 import youtube_dl
 from pathlib import Path
@@ -26,15 +26,20 @@ import sys
 import os
 import json
 import threading
+import time
 
-affirmative_choice = ["y", "yes", "s", "sim", "yeah", "yah", "ya"]
-negative_choice = ["n", "no", "nao", "na", "nop", "nah"]
+affirmative_choice = ["y", "yes", "s", "sim", "yeah", "yah", "ya"]  # affirmative choices, used on user interaction
+negative_choice = ["n", "no", "nao", "na", "nop", "nah"]    # negative choices, used on user interaction
+
+founded_videos_dict = {}    # leave empty, used on youtube_hooker
+founded_videos_limit = 3    # limit of videos that can be founded before exiting, default is 3, SHOULD BE INT
 
 
 class Json:
     """
     Handle JSON requests.
     """
+
     def encode(data, write_filename):
         """
         Encode a obj (if available) to a file
@@ -72,6 +77,7 @@ def clear():
     then clear the screen
     :return: a clean screen :)
     """
+
     if os.name == "nt":
         os.system('cls')
 
@@ -80,24 +86,46 @@ def clear():
 
 
 def signal_handler(signal, frame):
+    """
+    handler of CTRL + C, prints a blank line, then exit
+    :param signal:
+    :param frame:
+    :return: prints a blank line and exit
+    """
+
     print("\n")
     sys.exit(0)
 
 
 def wait_input():
+    """
+    this function should be called when the program doesnt recognize user input,
+    first clear the screen, then the user should press any key, then clear screen again,
+    then user should have the option to choose again if possible
+    :return: nothing, just clears the screen
+    """
+
     clear()
     input("Press any key to continue...")
     clear()
 
 
 def exit_func():
-    exit(clear())
+    """
+    this function should be called when exiting, first clear the screen, then exit
+    :return: exits program and clear the screen
+    """
+
+    clear()
+    sys.exit(0)
 
 
 def show_menu():
     """
+    function that prints the main menu options
     :return: menu banner with options
     """
+
     print(" ███╗   ███╗ ██████╗████████╗ ██████╗ ██╗    ██╗")
     print(" ████╗ ████║██╔════╝╚══██╔══╝██╔═══██╗██║    ██║")
     print(" ██╔████╔██║██║  ███╗  ██║   ██║   ██║██║ █╗ ██║")
@@ -119,76 +147,99 @@ def show_menu():
 
 
 def youtube_hooker(video):
+    """
+    log and check how much videos have been founded on the machine, this is used by every thread/daemon
+    :param video: video being downloaded
+    :return: if more than "X" videos have been founded on the machine, exit the current thread/download
+    """
+
+    if threading.currentThread() not in founded_videos_dict:
+        # check if the current thread have already been logged on the dict,
+        # if not, create a key using the current thread name and gives to it a value 0
+        founded_videos_dict[threading.currentThread()] = 0
 
     if len(video) <= 4:
-        global founded_videos
-        founded_videos += 1
-        print("         FOUND ONE!!!")
-    if founded_videos >= 3:
-        print("EXITING CURRENT THREAD!")
-        # TODO
+        # check if the video dict properties has more than 4 keys, this happens because when a video is founded, yt-dl
+        # creates only 4 keys to it on the hooker dict
+        founded_videos_dict[threading.currentThread()] += 1
 
+    if founded_videos_dict[threading.currentThread()] >= founded_videos_limit:
+        # if more than or equal than founded_videos_limit, exit the thread
+        # this happens because threads/daemons consumes machine resources and time
+        # if you want to download a full channel but you already have some videos, dont use the channels tab
+        print("\n     LIMIT OF VIDEOS FOUNDED FOR CURRENT CHANNEL,"
+              "\n     EXITING DAEMON: %s \n" % threading.currentThread())
+        sys.exit(0)
 
 
 def make_path():
+    """
+    create a JSON file on the program directory containing the path for downloaded videos,
+    user can use home path
+    :return: create a global variable called "path" containing the path, returns nothing
+    """
+
     clear()
     print("Creating a JSON file containing the path...\n")
     path_name = str(input("Type the full path for storing the videos... Enter to use your home path.\n>:"))
 
-    if path_name == "":
+    if path_name == "":     # if user input is blank,
         clear()
-        if not os.path.exists(str(Path.home())):
-            os.makedirs(str(Path.home()))
-        Json.encode(str(Path.home()), "path.json")
+        if not os.path.exists(str(Path.home())):    # check if user home exists,
+            os.makedirs(str(Path.home()))   # if not, create it
+        Json.encode(str(Path.home()), "path.json")  # encode JSON file containing the path (home path in this case)
 
-    else:
+    else:   # if user input is not blank,
         clear()
-        if not os.path.exists(path_name):
-            os.makedirs(path_name)
-        Json.encode(path_name, "path.json")
+        if not os.path.exists(path_name):   # check if user input path exists
+            os.makedirs(path_name)  # if not, create it
+        Json.encode(path_name, "path.json")     # encode JSON file containing the user path
 
     global path
-    path = Json.decode("path.json", return_content=0)
+    path = Json.decode("path.json", return_content=0)   # make a global variable containing the new path
 
-    print("New path is:", path)
-    input("\nEnter to continue.\n")
+    print("New path is:", path)     # print new path,
+    input("\nEnter to continue.\n")     # wait input, and then exit
     clear()
 
 
 def get_path():
     """
     Should get a "path" for storing the downloaded content
-    Uses json_handler ,
+    Uses json_handler,
     If not data could be found, calls make_path()
     :return: Make a global variable called "path",
     """
-    try:
+
+    try:    # tries to decode path
         global path
         path = Json.decode("path.json", return_content=0)
         return path
 
-    except FileNotFoundError:
+    except FileNotFoundError:   # if the file is not founded, calls make_path() and makes it
         make_path()
         return path
 
 
 def change_path():
     """
-
-    :return:
+    option for changing/making new path
+    :return: nothing, just changes path global variable
     """
+
     clear()
     print("Change path selected...\n")
     get_path()
     print("Your current path is: ", path)
     new_path = str(input("\nType your new path... Enter to return.\n>:"))
-    if new_path == "":
+    if new_path == "":  # check user input, if blank, return
         clear()
         return
-    else:
-        if not os.path.exists(new_path):
-            os.makedirs(new_path)
-        Json.encode(new_path, "path.json")
+    else:   # else: check, encode, change global variable path and returns
+        if not os.path.exists(new_path):    # checks if new path exists,
+            os.makedirs(new_path)   # if not, create it,
+        Json.encode(new_path, "path.json")  # then encode it
+        get_path()  # change global variable path
         clear()
         print("New path is:", path)
         input("\nEnter to continue.\n")
@@ -196,7 +247,7 @@ def change_path():
         return
 
 
-youtube_config = {      # --------------------CHANGE THIS!!!--------------------- #
+youtube_config = {      # --------------------CHANGE-THIS!!!--------------------- #
 
     'format':                   'bestaudio/best',   # Video format code. See options.py for more information.
     'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
@@ -224,7 +275,7 @@ youtube_config = {      # --------------------CHANGE THIS!!!--------------------
     'forcejson':                False,              # Force printing info_dict as JSON.
 }
 
-yt_list_of_channels_config = {      # --------------------CHANGE THIS!!!--------------------- #
+yt_list_of_channels_config = {      # --------------------CHANGE-THIS!!!--------------------- #
 
     'progress_hooks': [youtube_hooker],     # DONT CHANGE
 
@@ -254,7 +305,7 @@ yt_list_of_channels_config = {      # --------------------CHANGE THIS!!!--------
     'forcejson':                False,              # Force printing info_dict as JSON.
 }
 
-youtube_default_config = {
+youtube_default_config = {      # -----------------DO-NOT-CHANGE-THIS!!!----------------- #
 
     'format':                   'bestaudio/best',   # Video format code. See options.py for more information.
     'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
@@ -284,12 +335,21 @@ youtube_default_config = {
 
 
 def make_default_config():
+    """
+    function to reset the yt-dl config JSON
+    changes yt_config variable, makes a new yt_config.json file
+    :return: nothing
+    """
     Json.encode(youtube_default_config, "yt_config.json")
     global yt_config
     yt_config = Json.decode("yt_config.json", return_content=0)
 
 
 def apply_config():
+    """
+    used to write-down new changes to the yt config
+    :return: nothing
+    """
     Json.encode(youtube_config, "yt_config.json")
     global yt_config
     yt_config = Json.decode("yt_config.json", return_content=0)
@@ -297,13 +357,13 @@ def apply_config():
 
 def get_config():
     """
-    access the json configuration file and make a global variable called "yt_config"
-    :return: None
+    access the json configuration file and make a global variable called yt_config
+    :return: nothing
     """
-    try:
+    try:    # tries to decode the yt_config.json file
         global yt_config
         yt_config = Json.decode("yt_config.json", return_content=0)
-    except FileNotFoundError:
+    except FileNotFoundError:   # if the file doesnt exists, make a default one
         make_default_config()
 
 
@@ -471,20 +531,28 @@ if __name__ == "__main__":
                         continue
 
                     clear()
+                    print("CTRL + C to cancel download."
+                          "\n"
+                          "ENTER to resume program after the download is finished.")
+                    time.sleep(2)
                     channel_count = 0
+                    videos_threads = []
                     for channel in channels:
-                        global founded_videos
                         channel_count += 1
                         print()
                         print("     Channel %d of %d" % (channel_count, len(channels)))
                         print("     Channel: %s" % channel)
                         print("     URL: %s" % channels[channel])
                         print()
-                        founded_videos = 0
-                        threading.Thread(target=youtube_channel_download, args=(channels[channel],)).start()
+                        video_thread = threading.Thread(target=youtube_channel_download, args=(channels[channel],),
+                                                        daemon=True)
+                        videos_threads.append(video_thread)
 
-
-
+                    print("\nStarting threads\n")
+                    time.sleep(1)
+                    for video_thread in videos_threads:
+                        video_thread.start()
+                    input()
 
                 elif channel_choice == 2:
                     clear()
@@ -499,7 +567,6 @@ if __name__ == "__main__":
                         count += 1
                         print("     %d) %s == %s" % (count, channel, channels[channel]))
                     input("\nPress any key to continue...")
-                    # TODO add options to edit, remove and download specific channels
 
                 elif channel_choice == 3:
                     add_channel_maintainer = True
