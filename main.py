@@ -135,7 +135,7 @@ def wait_input():
     """
 
     clear()
-    input("Press any key to continue...")
+    input("Press " + color.yellow(color.bold("any key")) + color.reset() + " to continue...")
     clear()
 
 
@@ -199,8 +199,8 @@ def youtube_hooker(video):
         # if more than or equal than founded_videos_limit, exit the thread
         # this happens because threads/daemons consumes machine resources and time
         # if you want to download a full channel but you already have some videos, dont use the channels tab
-        print("\n     LIMIT OF VIDEOS FOUNDED FOR CURRENT CHANNEL,"
-              "\n     EXITING DAEMON: %s \n" % threading.currentThread())
+        print("\n     " + color.yellow(color.bold("LIMIT OF VIDEOS FOUNDED FOR CURRENT CHANNEL,")) +
+              "\n     " + color.red(color.bold("EXITING DAEMON: %s \n" % threading.currentThread())))
         sys.exit(0)
 
 
@@ -212,8 +212,11 @@ def make_path():
     """
 
     clear()
-    print("Creating a JSON file containing the path...\n")
-    path_name = str(input("Type the full path for storing the videos... Enter to use your home path.\n>:"))
+    print(color.red(color.bold("-------------------------MAKE-PATH--------------------------")))
+    path_name = str(input("Type the " + color.yellow(color.bold("full path")) + color.reset() +
+                          " for storing downloads...\n" +
+                          color.yellow(color.bold("Enter")) + color.reset() + " to use your " +
+                          color.yellow(color.bold("home path")) + color.reset() + "." + "\n>:"))
 
     if path_name == "":     # if user input is blank,
         clear()
@@ -229,9 +232,6 @@ def make_path():
 
     global path
     path = Json.decode("path.json", return_content=0)   # make a global variable containing the new path
-
-    print("New path is:", path)     # print new path,
-    input("\nEnter to continue.\n")     # wait input, and then exit
     clear()
 
 
@@ -260,21 +260,20 @@ def change_path():
     """
 
     clear()
-    print("Change path selected...\n")
+    print(color.red(color.bold("------------------------CHANGE-PATH-------------------------")))
     get_path()
-    print("Your current path is: ", path)
-    new_path = str(input("\nType your new path... Enter to return.\n>:"))
+    print("Your " + color.yellow(color.bold("current path")) + color.reset() + " is: " + color.yellow(color.bold(path)))
+    new_path = str(input("\nType your " + color.yellow(color.bold("new path")) + color.reset() + "..." +
+                         color.yellow(color.bold("\nEnter")) + " to " + color.yellow(color.bold("return")) + color.reset() + ".\n>:"))
     if new_path == "":  # check user input, if blank, return
         clear()
         return
+
     else:   # else: check, encode, change global variable path and returns
         if not os.path.exists(new_path):    # checks if new path exists,
             os.makedirs(new_path)   # if not, create it,
         Json.encode(new_path, "path.json")  # then encode it
         get_path()  # change global variable path
-        clear()
-        print("New path is:", path)
-        input("\nEnter to continue.\n")
         clear()
         return
 
@@ -485,6 +484,7 @@ if __name__ == "__main__":
     maintainer = True
 
     while maintainer:
+
         colorama.init(autoreset=True)
         signal.signal(signal.SIGINT, signal_handler)
         color = Color()
@@ -493,7 +493,7 @@ if __name__ == "__main__":
         get_path()
         clear()
         show_menu()  # show menu
-        choice = input("\n>: ")  # wait for user input
+        choice = input("\n>:")  # wait for user input
 
         if choice == "":
             clear()
@@ -513,9 +513,7 @@ if __name__ == "__main__":
                 continue
 
             else:   # if user type something that != path, ignore and return to main menu
-                clear()  # clear the screen
-                input("Press any key to go back...\n")  # wait for user input
-                clear()
+                wait_input()
                 continue  # goes right back in the loop, skip the "else:" later on, save time
 
         if choice == 1:
