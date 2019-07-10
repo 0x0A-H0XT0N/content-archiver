@@ -18,21 +18,50 @@
 # TODO: comment every function
 # TODO add options to edit, remove and download specific channels
 
-
-import youtube_dl
-from pathlib import Path
+import json
+import threading
 import signal
 import sys
 import os
-import json
-import threading
-import time
+
+import youtube_dl
+import colorama
+
+from pathlib import Path
+from time import sleep
+
 
 affirmative_choice = ["y", "yes", "s", "sim", "yeah", "yah", "ya"]  # affirmative choices, used on user interaction
 negative_choice = ["n", "no", "nao", "na", "nop", "nah"]    # negative choices, used on user interaction
 
 founded_videos_dict = {}    # leave empty, used on youtube_hooker
 founded_videos_limit = 3    # limit of videos that can be founded before exiting, default is 3, SHOULD BE INT
+
+
+class Color:
+    """
+
+    """
+    RED = colorama.Fore.RED
+    YELLOW = colorama.Fore.YELLOW
+    BLUE = colorama.Fore.BLUE
+    BOLD = '\033[1m'
+    END = '\033[0m'
+
+    def red(self, text):
+        return self.RED + text
+
+    def yellow(self, text):
+        return self.YELLOW + text
+
+    def blue(self, text):
+        return self.BLUE + text
+
+    def bold(self, text):
+        return self.BOLD + text + self.END
+
+    def reset(self):
+        return colorama.Style.RESET_ALL
 
 
 class Json:
@@ -126,24 +155,27 @@ def show_menu():
     :return: menu banner with options
     """
 
-    print(" ███╗   ███╗ ██████╗████████╗ ██████╗ ██╗    ██╗")
-    print(" ████╗ ████║██╔════╝╚══██╔══╝██╔═══██╗██║    ██║")
-    print(" ██╔████╔██║██║  ███╗  ██║   ██║   ██║██║ █╗ ██║")
-    print(" ██║╚██╔╝██║██║   ██║  ██║   ██║   ██║██║███╗██║")
-    print(" ██║ ╚═╝ ██║╚██████╔╝  ██║   ╚██████╔╝╚███╔███╔╝")
-    print(" ╚═╝     ╚═╝ ╚═════╝   ╚═╝    ╚═════╝  ╚══╝╚══╝  ")
-    print("")
-    print("    █████╗ ██████╗  ██████╗██╗  ██╗██╗██╗   ██╗███████╗")
-    print("   ██╔══██╗██╔══██╗██╔════╝██║  ██║██║██║   ██║██╔════╝")
-    print("   ███████║██████╔╝██║     ███████║██║██║   ██║█████╗")
-    print("   ██╔══██║██╔══██╗██║     ██╔══██║██║╚██╗ ██╔╝██╔══╝")
-    print("   ██║  ██║██║  ██║╚██████╗██║  ██║██║ ╚████╔╝ ███████╗")
-    print("   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝")
-    print("")
-    print("1) Download video/playlist/channel   |  conf) Configure yt-dl        ")
-    print("2) Channels                          |  path) Set download path      ")
-    # print("4) Make a torrent                    |                               ")
-    print("0) Exit                              |                               ")
+    print(color.red(" ███╗   ███╗ ██████╗████████╗ ██████╗ ██╗    ██╗"))
+    print(color.red(" ████╗ ████║██╔════╝╚══██╔══╝██╔═══██╗██║    ██║"))
+    print(color.red(" ██╔████╔██║██║  ███╗  ██║   ██║   ██║██║ █╗ ██║"))
+    print(color.red(" ██║╚██╔╝██║██║   ██║  ██║   ██║   ██║██║███╗██║"))
+    print(color.red(" ██║ ╚═╝ ██║╚██████╔╝  ██║   ╚██████╔╝╚███╔███╔╝"))
+    print(color.red(" ╚═╝     ╚═╝ ╚═════╝   ╚═╝    ╚═════╝  ╚══╝╚══╝  "))
+    print(color.red(""))
+    print(color.red("    █████╗ ██████╗  ██████╗██╗  ██╗██╗██╗   ██╗███████╗"))
+    print(color.red("   ██╔══██╗██╔══██╗██╔════╝██║  ██║██║██║   ██║██╔════╝"))
+    print(color.red("   ███████║██████╔╝██║     ███████║██║██║   ██║█████╗"))
+    print(color.red("   ██╔══██║██╔══██╗██║     ██╔══██║██║╚██╗ ██╔╝██╔══╝"))
+    print(color.red("   ██║  ██║██║  ██║╚██████╗██║  ██║██║ ╚████╔╝ ███████╗"))
+    print(color.red("   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝"))
+    print(color.reset() + "                 by " + color.red(color.bold("0x0A_H0XT0N")))
+    print(color.yellow(color.bold("1") + color.reset() + ") Download video/playlist/channel   " +
+                       color.red(color.bold("|" + "  " + color.yellow(color.bold("conf" + color.reset() +
+                                                                                 ") Configure yt-dl"))))))
+    print(color.yellow(color.bold("2") + color.reset() + ") Channels                          " +
+                       color.red(color.bold("|" + "  " + color.yellow(color.bold("path" + color.reset() +
+                                                                                 ") Set download path"))))))
+    print(color.yellow(color.bold("0") + color.reset() + ") Exit"))
 
 
 def youtube_hooker(video):
@@ -453,7 +485,9 @@ if __name__ == "__main__":
     maintainer = True
 
     while maintainer:
+        colorama.init(autoreset=True)
         signal.signal(signal.SIGINT, signal_handler)
+        color = Color()
         clear()
         get_config()
         get_path()
@@ -534,7 +568,7 @@ if __name__ == "__main__":
                     print("CTRL + C to cancel download."
                           "\n"
                           "ENTER to resume program after the download is finished.")
-                    time.sleep(2)
+                    sleep(2)
                     channel_count = 0
                     videos_threads = []
                     for channel in channels:
@@ -549,7 +583,7 @@ if __name__ == "__main__":
                         videos_threads.append(video_thread)
 
                     print("\nStarting threads\n")
-                    time.sleep(1)
+                    sleep(1)
                     for video_thread in videos_threads:
                         video_thread.start()
                     input()
