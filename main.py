@@ -6,16 +6,9 @@
 #  ╚═╝     ╚═╝ ╚═════╝   ╚═╝    ╚═════╝  ╚══╝╚══╝     ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝
 # https://github.com/PhoenixK7PB/mgtow-archive
 #
-# TODO: handling path for windows machines (home path)
 # TODO: add choose option for format when downloading
-# TODO: make a "Config" file for storing path and downloaded channels
-#  (last update, total videos, etc)
-# TODO: use colorama for font color
-# TODO: Make a title for every "section" of the program (like lazy script) using 60 chars
-#  like ------------------------------------------------------------
 # TODO: add a logger that saves every error and prints it at the end of the download
 # TODO: add torrent options
-# TODO: comment every function
 # TODO add options to edit, remove and download specific channels
 
 import json
@@ -40,7 +33,10 @@ founded_videos_limit = 3    # limit of videos that can be founded before exiting
 
 class Color:
     """
-
+    Return text with color using colorama.
+    Pretty much straight forward to read.
+    Just use Color().wantedColorOrBold(textToBeColoredOrBolded).
+    reset() reset the last color usage (if you use this class and after it want to
     """
     RED = colorama.Fore.RED
     YELLOW = colorama.Fore.YELLOW
@@ -126,17 +122,24 @@ def signal_handler(signal, frame):
     sys.exit(0)
 
 
-def wait_input():
+def wait_input(clear_screen=True):
     """
     this function should be called when the program doesnt recognize user input,
     first clear the screen, then the user should press any key, then clear screen again,
     then user should have the option to choose again if possible
     :return: nothing, just clears the screen
     """
+    if clear_screen:
+        clear()
+        input("Press " + color.yellow(color.bold("any key")) + " to continue...")
+        clear()
+    elif not clear_screen:
+        input("Press " + color.yellow(color.bold("any key")) + " to continue...\n")
+        clear()
 
-    clear()
-    input("Press " + color.yellow(color.bold("any key")) + color.reset() + " to continue...")
-    clear()
+
+def enter_to_return():
+    return color.yellow(color.bold("Enter")) + " to " + color.yellow(color.bold("return")) + "."
 
 
 def exit_func():
@@ -168,14 +171,12 @@ def show_menu():
     print(color.red("   ██╔══██║██╔══██╗██║     ██╔══██║██║╚██╗ ██╔╝██╔══╝"))
     print(color.red("   ██║  ██║██║  ██║╚██████╗██║  ██║██║ ╚████╔╝ ███████╗"))
     print(color.red("   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝"))
-    print(color.reset() + "                 by " + color.red(color.bold("0x0A_H0XT0N")))
-    print(color.yellow(color.bold("1") + color.reset() + ") Download video/playlist/channel   " +
-                       color.red(color.bold("|" + "  " + color.yellow(color.bold("conf" + color.reset() +
-                                                                                 ") Configure yt-dl"))))))
-    print(color.yellow(color.bold("2") + color.reset() + ") Channels                          " +
-                       color.red(color.bold("|" + "  " + color.yellow(color.bold("path" + color.reset() +
-                                                                                 ") Set download path"))))))
-    print(color.yellow(color.bold("0") + color.reset() + ") Exit"))
+    print("                 by " + color.red(color.bold("0x0A_H0XT0N")))
+    print(color.yellow(color.bold("1") + ") Download video/playlist/channel   " +
+                       color.red(color.bold("|" + "  " + color.yellow(color.bold("conf") + ") Configure yt-dl")))))
+    print(color.yellow(color.bold("2") + ") Channels                          " +
+                       color.red(color.bold("|" + "  " + color.yellow(color.bold("path") + ") Set download path")))))
+    print(color.yellow(color.bold("0") + ") Exit"))
 
 
 def youtube_hooker(video):
@@ -213,10 +214,10 @@ def make_path():
 
     clear()
     print(color.red(color.bold("-------------------------MAKE-PATH--------------------------")))
-    path_name = str(input("Type the " + color.yellow(color.bold("full path")) + color.reset() +
+    path_name = str(input("Type the " + color.yellow(color.bold("full path")) +
                           " for storing downloads...\n" +
-                          color.yellow(color.bold("Enter")) + color.reset() + " to use your " +
-                          color.yellow(color.bold("home path")) + color.reset() + "." + "\n>:"))
+                          color.yellow(color.bold("Enter")) + " to use your " +
+                          color.yellow(color.bold("home path")) + "." + "\n>:"))
 
     if path_name == "":     # if user input is blank,
         clear()
@@ -262,9 +263,9 @@ def change_path():
     clear()
     print(color.red(color.bold("------------------------CHANGE-PATH-------------------------")))
     get_path()
-    print("Your " + color.yellow(color.bold("current path")) + color.reset() + " is: " + color.yellow(color.bold(path)))
-    new_path = str(input("\nType your " + color.yellow(color.bold("new path")) + color.reset() + "..." +
-                         color.yellow(color.bold("\nEnter")) + " to " + color.yellow(color.bold("return")) + color.reset() + ".\n>:"))
+    print("Your current path is: " + color.yellow(color.bold(path)))
+    new_path = str(input("\nType your new path...\n" + enter_to_return() +
+                         "\n>:"))
     if new_path == "":  # check user input, if blank, return
         clear()
         return
@@ -399,30 +400,42 @@ def get_config():
 
 
 def config_handler():
+    """
+    this function is used to handle pretty much all configuration process on the program,
+    this is pretty much straight forward and should be easy to read (ignore color calls)
+    :return:  depends i guess :p
+    """
     config_maintainer = True
 
     while config_maintainer:
         clear()
         get_config()
-        print("Enter to return...\n")
-        print("Youtube-dl version: %s" % youtube_dl.update.__version__)
-        print("\napply) Apply your changes (from code to disk) using 'youtube_config'")
-        print("\nreset) Reset to default the config file for you")
-        print("\nsee) See the config file")
-        print("")
-        config_choice = str(input("\n>:"))
+        print(color.red(color.bold("-----------------------CONFIGURE-YT-DL----------------------")))
+        print("Youtube-dl version: " + color.yellow(color.bold(youtube_dl.update.__version__)))
+        print("\n" + color.yellow(color.bold("apply") + ") Apply changes (from code) using "
+                                                                        "'youtube_config'."))
+        print(color.yellow(color.bold("reset") + ") Reset the config to default."))
+
+        print(color.yellow(color.bold("see") + ") See current configuration options."))
+        print(enter_to_return())
+        config_choice = str(input(">:"))
+
         if config_choice == "":
             return
 
         elif config_choice.lower() == 'apply':
             clear()
             apply_config()
-            input("Config wrote down to disk... Enter to continue.\n")
+            print(color.red(color.bold("--------------------CONFIGURATION-APPLIED-------------------")))
+            wait_input(clear_screen=False)
             return
 
         elif config_choice.lower() == 'reset':
             clear()
-            sure = str(input("Resetting the config file will wipe out all changes to it. Are you sure? [y/n]\n>:"))
+            print(color.red(color.bold("---------------------RESET-CONFIGURATION--------------------")))
+            sure = str(input(color.yellow(color.bold("Current modifications will be ")) +
+                             color.red(color.bold("lost")) + color.yellow(color.bold(".\n")) +
+                             color.yellow(color.bold("Proceed? [y/N]")) + "\n>:"))
             if sure in affirmative_choice:
                 make_default_config()
                 continue
@@ -432,24 +445,42 @@ def config_handler():
         elif config_choice.lower() == 'see':
             clear()
             get_config()
-            print("Found %d options...\n")
+            print(color.red(color.bold("--------------------CONFIGURATION-OPTIONS-------------------")))
+            print("Found " + color.yellow(color.bold(str(len(yt_config)))) +
+                  " options...\n")
             for config in yt_config:
-                print("%s: %s" % (str(config), str(yt_config[config])))
-            input()
+                print(color.yellow(color.bold(str(config)) + color.bold(": ") +
+                                   color.red(color.bold(str(yt_config[config])))))
+            print()
+            wait_input(clear_screen=False)
 
 
 def get_channels():
+    """
+    decode the JSON file containing the channels, if no JSON is found, return False
+    :return: make a global called channels (dict) containing all channels on the JSON file,
+    the dict data is NAME : URL
+    """
     try:
         global channels
         channels = Json.decode("channels.json", return_content=0)
 
     except FileNotFoundError:
         clear()
-        input("No channels found... maybe add one?")
+        print(color.red(color.bold("----------------------------ERROR---------------------------")))
+        print("No channels founded... maybe add one?")
+        wait_input(clear_screen=False)
         return False
 
 
 def add_channel(channel_name, channel_url):
+    """
+    add a channel to a JSON file on a dict like obj
+    NAME : URL
+    :param channel_name: channel name
+    :param channel_url: channel url
+    :return:  calls get_channels()
+    """
     try:
         old_channels = Json.decode("channels.json", return_content=0)
         old_channels[channel_name] = channel_url
@@ -480,20 +511,147 @@ def youtube_channel_download(url):
     youtube_dl.YoutubeDL(yt_list_of_channels_config).download([url])
 
 
+def download_choice():
+    """
+    use interface for downloading videos
+    :return:
+    """
+    clear()
+    print(color.red(color.bold("--------------------------DOWNLOAD--------------------------")))
+    video_url = str(input("Type the URL to download.\n" + enter_to_return() + "\n>:"))
+
+    if video_url == "":
+        clear()
+        return
+
+    youtube_download(video_url)
+    input(color.red(color.bold("\n\nFinished.\n")) +
+          "Press " +
+          color.yellow(color.bold("any key")) +
+          " to continue...\n")
+
+
+def channels_choice():
+    """
+    user interface for channels stuff
+    :return:
+    """
+    channel_maintainer = True
+
+    while channel_maintainer:
+        clear()
+        print(color.red(color.bold("--------------------------CHANNELS--------------------------")))
+        print(color.yellow(color.bold("1")) + ") Search for new videos in every channel")
+        print(color.yellow(color.bold("2")) + ") View channels")
+        print(color.yellow(color.bold("3")) + ") Add a channel")
+        print(enter_to_return())
+        channel_choice = input(">:")
+
+        try:
+            channel_choice = int(channel_choice)
+
+        except ValueError:
+            if channel_choice.lower() == "":
+                break
+            else:
+                wait_input()
+
+        if channel_choice == 1:
+            clear()
+            print(color.red(color.bold("----------------------DOWNLOAD-CHANNELS---------------------")))
+            if get_channels() is False:
+                continue
+
+            print(color.yellow(color.bold("Found ")) +
+                  color.red(color.bold(str(len(channels)) + " channels")) +
+                  color.yellow(color.bold("...\n")))
+            download_channels_choice = str(input(color.red(color.bold("All videos")) +
+                                                 color.yellow(color.bold(" from ")) +
+                                                 color.red(color.bold("all channels")) +
+                                                 color.yellow(color.bold(" will be downloaded.")) +
+                                                 color.yellow(color.bold("\nProceed? [y/N]")) +
+                                                 "\n>:"))
+
+            if download_channels_choice not in affirmative_choice:
+                clear()
+                continue
+
+            clear()
+            print(color.yellow(color.bold("CTRL + C")) +
+                  " to cancel download.\n" +
+                  color.yellow(color.bold("ENTER")) +
+                  " to resume program after the download is finished.")
+            sleep(2)
+            channel_count = 0
+            videos_threads = []
+            for channel in channels:
+                channel_count += 1
+                print()
+                print("     Channel %d of %d" % (channel_count, len(channels)))
+                print("     Channel: %s" % channel)
+                print("     URL: %s" % channels[channel])
+                print()
+                sleep(0.25)
+                video_thread = threading.Thread(target=youtube_channel_download, args=(channels[channel],),
+                                                daemon=True)
+                videos_threads.append(video_thread)
+
+            print(color.red(color.bold("\nStarting threads...\n")))
+            sleep(1)
+            for video_thread in videos_threads:
+                video_thread.start()
+            input()
+
+        elif channel_choice == 2:
+            clear()
+            if get_channels() is False:
+                continue
+
+            print(color.red(color.bold("------------------------VIEW-CHANNELS-----------------------")))
+            print("Found %s channels...\n" % color.yellow(color.bold(str(len(channels)))))
+            count = 0
+
+            for channel in channels:
+                count += 1
+                print("      %s) Name: %s\n"
+                      "         URL:  %s" % (color.yellow(color.bold(str(count))), channel, channels[channel]))
+                print()
+            wait_input(clear_screen=False)
+
+        elif channel_choice == 3:
+            add_channel_maintainer = True
+
+            while add_channel_maintainer:
+                clear()
+                print(color.red(color.bold("-------------------------ADD-CHANNEL------------------------")))
+                print(color.yellow(color.bold("Leave everything blank to cancel.\n")))
+                channel_name = str(input(color.yellow(color.bold("Name")) + " of the channel?\n>:"))
+                channel_url = str(input(color.yellow(color.bold("\nLink")) + " of the channel?\n>:"))
+                if channel_name and channel_url != "":
+                    add_channel(channel_name, channel_url)
+                else:
+                    clear()
+                    break
+
+                add_another_channel_choice = str(input("\nAdd another channel? [y/N]\n>:"))
+                if add_another_channel_choice not in affirmative_choice:
+                    clear()
+                    break
+
+
 if __name__ == "__main__":
+    colorama.init(autoreset=True)
+    signal.signal(signal.SIGINT, signal_handler)
+    color = Color()
+    get_config()
+    get_path()
+
     maintainer = True
 
     while maintainer:
-
-        colorama.init(autoreset=True)
-        signal.signal(signal.SIGINT, signal_handler)
-        color = Color()
-        clear()
-        get_config()
-        get_path()
         clear()
         show_menu()  # show menu
-        choice = input("\n>:")  # wait for user input
+        choice = input(">:")  # wait for user input
 
         if choice == "":
             clear()
@@ -512,118 +670,19 @@ if __name__ == "__main__":
                 config_handler()
                 continue
 
-            else:   # if user type something that != path, ignore and return to main menu
+            else:   # if user type something that is not an option, ignore and wait for another input
                 wait_input()
-                continue  # goes right back in the loop, skip the "else:" later on, save time
-
-        if choice == 1:
-            clear()
-            print("--------------------------DOWNLOAD--------------------------")
-            video_url = str(input("Type URL to download.\n>: "))  # wait for user input,
-
-            if video_url == "":  # validate user input,if it's empty, go to the menu
-                clear()
                 continue
 
-            youtube_download(video_url)
-            input("\n\nFinished. Enter to continue.\n\n")
+        if choice == 1:
+            download_choice()
 
         elif choice == 2:
-            channel_maintainer = True
-
-            while channel_maintainer:
-                clear()
-                print("--------------------------CHANNELS--------------------------")
-                print("1) Search for new videos in every channel")
-                print("2) View channels")
-                print("3) Add a channel")
-                print("b) Go back")
-                channel_choice = input("\n>:")
-
-                try:
-                    channel_choice = int(channel_choice)
-
-                except ValueError:
-                    if channel_choice.lower() == "b":
-                        break
-                    else:
-                        wait_input()
-
-                if channel_choice == 1:
-                    clear()
-                    print("----------------------DOWNLOAD-CHANNELS---------------------")
-                    if get_channels() is False:
-                        continue
-
-                    print("Found %d channels...\n" % len(channels))
-                    download_channels_choice = str(input("All videos from all channels will be downloaded. "
-                                                         "Do you want to continue? [y/N]\n>:"))
-                    if download_channels_choice not in affirmative_choice:
-                        clear()
-                        continue
-
-                    clear()
-                    print("CTRL + C to cancel download."
-                          "\n"
-                          "ENTER to resume program after the download is finished.")
-                    sleep(2)
-                    channel_count = 0
-                    videos_threads = []
-                    for channel in channels:
-                        channel_count += 1
-                        print()
-                        print("     Channel %d of %d" % (channel_count, len(channels)))
-                        print("     Channel: %s" % channel)
-                        print("     URL: %s" % channels[channel])
-                        print()
-                        video_thread = threading.Thread(target=youtube_channel_download, args=(channels[channel],),
-                                                        daemon=True)
-                        videos_threads.append(video_thread)
-
-                    print("\nStarting threads\n")
-                    sleep(1)
-                    for video_thread in videos_threads:
-                        video_thread.start()
-                    input()
-
-                elif channel_choice == 2:
-                    clear()
-                    if get_channels() is False:
-                        continue
-
-                    print("------------------------VIEW-CHANNELS-----------------------")
-                    print("Found %d channels...\n" % len(channels))
-                    count = 0
-
-                    for channel in channels:
-                        count += 1
-                        print("     %d) %s == %s" % (count, channel, channels[channel]))
-                    input("\nPress any key to continue...")
-
-                elif channel_choice == 3:
-                    add_channel_maintainer = True
-
-                    while add_channel_maintainer:
-                        clear()
-                        print("-------------------------ADD-CHANNEL------------------------")
-                        channel_name = str(input("Name of the channel?\n>:"))
-                        channel_url = str(input("\nFull channel url?\n>:"))
-                        add_channel(channel_name, channel_url)
-
-                        add_another_channel_choice = str(input("\nAdd another channel? [y/N]\n>:"))
-                        if add_another_channel_choice not in affirmative_choice:
-                            clear()
-                            break
+            channels_choice()
 
         elif choice == 3:
-            print
-            "Menu 4 has been selected"
-            ## You can add your code or functions here
-        elif choice == 4:
-            print
-            "Menu 5 has been selected"
-            ## You can add your code or functions here
-            loop = False  # This will make the while loop to end as not value of loop is set to False
+            pass
+            # TODO start torrent stuff?
         elif choice == 0:
             exit_func()
         else:
