@@ -11,6 +11,7 @@
 # TODO: add torrent options
 # TODO: add options to edit, remove and download specific channels
 # TODO: move all config files to a single file
+# TODO: re-make README.md
 
 import json
 import threading
