@@ -198,7 +198,7 @@ def show_menu():
     print(color.red("   ██╔══██║██╔══██╗██║     ██╔══██║██║╚██╗ ██╔╝██╔══╝"))
     print(color.red("   ██║  ██║██║  ██║╚██████╗██║  ██║██║ ╚████╔╝ ███████╗"))
     print(color.red("   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝"))
-    print("                 by " + color.red(color.bold("0x0A_H0XT0N")))
+    print("                 by " + color.red(color.bold("PhoenixK7PB")))
     print(color.yellow(color.bold("1") + ") Download video/playlist/channel   " +
                        color.red(color.bold("|" + "  " + color.yellow(color.bold("conf") + ") Configure yt-dl")))))
     print(color.yellow(color.bold("2") + ") Channels                          " +
