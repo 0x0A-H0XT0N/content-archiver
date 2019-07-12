@@ -9,8 +9,8 @@ def signal_handler(signal, frame):
 
 
 def youtube_hooker(video):
-    test1 = threading.currentThread()
-    threading.currentThread().
+    test1 = threading.current_thread()
+    threading.current_thread().is
 
 youtube_config = {      # --------------------CHANGE THIS!!!--------------------- #
 

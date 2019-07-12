@@ -10,7 +10,6 @@
 # TODO: add a logger that saves every error and prints it at the end of the download
 # TODO: add torrent options
 # TODO: add options to edit, remove and download specific channels
-# TODO: make a PRESSING detector for wait_input func
 # TODO: move all config files to a single file
 
 import json
@@ -18,6 +17,8 @@ import threading
 import signal
 import sys
 import os
+import tty
+import termios
 
 import youtube_dl
 import colorama
@@ -30,7 +31,9 @@ affirmative_choice = ["y", "yes", "s", "sim", "yeah", "yah", "ya"]  # affirmativ
 negative_choice = ["n", "no", "nao", "na", "nop", "nah"]    # negative choices, used on user interaction
 
 founded_videos_dict = {}    # leave empty, used on youtube_hooker
-founded_videos_limit = 3    # limit of videos that can be founded before exiting, default is 3, SHOULD BE INT
+founded_videos_limit = 10    # limit of videos that can be founded before exiting, default is 10, SHOULD BE INT
+
+original_stdin_settings = termios.tcgetattr(sys.stdin)
 
 
 class Color:
@@ -119,25 +122,28 @@ def signal_handler(signal, frame):
     :param frame:
     :return: prints a blank line and exit
     """
-
+    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, original_stdin_settings)
+    # this line is somewhat useful if the user exit during the "press any key" thing,
+    # because the "stdin" will be set to raw mode, if the user hit CTRL + C, the
+    # terminal stays in raw mode, with he will be stuck, using this line, if the user
+    # hit CTRL + C, the "stdin" will be restored (using the original_stdin_settings variable)
+    # and he will not get stuck
     print("\n")
     sys.exit(0)
 
 
-def wait_input(clear_screen=True):
+def wait_input():
     """
-    this function should be called when the program doesnt recognize user input,
-    first clear the screen, then the user should press any key, then clear screen again,
-    then user should have the option to choose again if possible
-    :return: nothing, just clears the screen
+    this function will detect any key press, until that happens, the program will wait
     """
-    if clear_screen:
-        clear()
-        input("Press " + color.yellow(color.bold("any key")) + " to continue...")
-        clear()
-    elif not clear_screen:
-        input("Press " + color.yellow(color.bold("any key")) + " to continue...\n")
-        clear()
+    print("Press " + color.yellow(color.bold("any key")) + " to continue...")
+    tty.setcbreak(sys.stdin)    # set "stdin" in raw mode, no line buffering from here
+    user_input = None   # used to control while loop, the user input will be None,
+    # if the user input changes, the while loop should be broken
+    while user_input is None:   # while the user input is None (e.i. no key press detect on "stdin"), wait...
+        user_input = sys.stdin.read(1)[0]   # this will be reading "stdin" until a key is detected
+        clear()     # this will only be reached when a key is detected, until that happens, this will not be reached
+    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, original_stdin_settings)    # set "stdin" to default (no raw input)
 
 
 def enter_to_return():
@@ -206,22 +212,22 @@ def youtube_hooker(video):
     :return: if more than "X" videos have been founded on the machine, exit the current thread/download
     """
 
-    if threading.currentThread() not in founded_videos_dict:
+    if threading.current_thread() not in founded_videos_dict:
         # check if the current thread have already been logged on the dict,
         # if not, create a key using the current thread name and gives to it a value 0
-        founded_videos_dict[threading.currentThread()] = 0
+        founded_videos_dict[threading.current_thread()] = 0
 
     if len(video) <= 4:
         # check if the video dict properties has more than 4 keys, this happens because when a video is founded, yt-dl
         # creates only 4 keys to it on the hooker dict
-        founded_videos_dict[threading.currentThread()] += 1
+        founded_videos_dict[threading.current_thread()] += 1
 
-    if founded_videos_dict[threading.currentThread()] >= founded_videos_limit:
+    if founded_videos_dict[threading.current_thread()] >= founded_videos_limit:
         # if more than or equal than founded_videos_limit, exit the thread
         # this happens because threads/daemons consumes machine resources and time
         # if you want to download a full channel but you already have some videos, dont use the channels tab
         print("\n     " + color.yellow(color.bold("LIMIT OF VIDEOS FOUNDED FOR CURRENT CHANNEL,")) +
-              "\n     " + color.red(color.bold("EXITING DAEMON: %s \n" % threading.currentThread())))
+              "\n     " + color.red(color.bold("EXITING DAEMON: %s \n" % threading.current_thread())))
         sys.exit(0)
 
 
@@ -448,7 +454,7 @@ def config_handler():
             clear()
             apply_config()
             print(color.red(color.bold("--------------------CONFIGURATION-APPLIED-------------------")))
-            wait_input(clear_screen=False)
+            wait_input()
             return
 
         elif config_choice.lower() == 'reset':
@@ -473,7 +479,7 @@ def config_handler():
                 print(color.yellow(color.bold(str(config)) + color.bold(": ") +
                                    color.red(color.bold(str(yt_config[config])))))
             print()
-            wait_input(clear_screen=False)
+            wait_input()
 
 
 def get_channels():
@@ -490,7 +496,7 @@ def get_channels():
         clear()
         print(color.red(color.bold("----------------------------ERROR---------------------------")))
         print("No channels founded... maybe add one?")
-        wait_input(clear_screen=False)
+        wait_input()
         return False
 
 
@@ -575,6 +581,7 @@ def channels_choice():
             if channel_choice.lower() == "":
                 break
             else:
+                clear()
                 wait_input()
 
         if channel_choice == 1:
@@ -621,7 +628,10 @@ def channels_choice():
             sleep(1)
             for video_thread in videos_threads:
                 video_thread.start()
-            input()
+            for video_thread in videos_threads:
+                while video_thread.is_alive():
+                    pass
+            wait_input()
 
         elif channel_choice == 2:
             clear()
@@ -637,7 +647,7 @@ def channels_choice():
                 print("      %s) Name: %s\n"
                       "         URL:  %s" % (color.yellow(color.bold(str(count))), channel, channels[channel]))
                 print()
-            wait_input(clear_screen=False)
+            wait_input()
 
         elif channel_choice == 3:
             add_channel_maintainer = True
@@ -693,6 +703,7 @@ if __name__ == "__main__":
                 continue
 
             else:   # if user type something that is not an option, ignore and wait for another input
+                clear()
                 wait_input()
                 continue
 
@@ -708,4 +719,5 @@ if __name__ == "__main__":
         elif choice == 0:
             exit_func()
         else:
+            clear()
             wait_input()
