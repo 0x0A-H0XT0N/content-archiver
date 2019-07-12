@@ -9,7 +9,9 @@
 # TODO: add choose option for format when downloading
 # TODO: add a logger that saves every error and prints it at the end of the download
 # TODO: add torrent options
-# TODO add options to edit, remove and download specific channels
+# TODO: add options to edit, remove and download specific channels
+# TODO: make a PRESSING detector for wait_input func
+# TODO: move all config files to a single file
 
 import json
 import threading
@@ -152,6 +154,24 @@ def exit_func():
     sys.exit(0)
 
 
+def make_config_dir():
+    """
+    make the configuration center directory at ~/.config/mgtow-archive
+    :return:
+    """
+    # if not os.path.exists(str(Path.home()) + "/.config/mgtow-archive"):  # check if config dir exists,
+    os.makedirs(str(Path.home()) + "/.config/mgtow-archive/")  # if not, create it
+
+
+def get_config_dir():
+    global config_dir
+    if not os.path.exists(str(Path.home()) + "/.config/mgtow-archive/"):  # check if config dir exists
+        make_config_dir()
+        config_dir = str(Path.home()) + "/.config/mgtow-archive/"
+    else:
+        config_dir = str(Path.home()) + "/.config/mgtow-archive/"
+
+
 def show_menu():
     """
     function that prints the main menu options
@@ -223,16 +243,16 @@ def make_path():
         clear()
         if not os.path.exists(str(Path.home())):    # check if user home exists,
             os.makedirs(str(Path.home()))   # if not, create it
-        Json.encode(str(Path.home()), "path.json")  # encode JSON file containing the path (home path in this case)
+        Json.encode(str(Path.home()), config_dir + "path.json")  # encode JSON file containing the path (home path in this case)
 
     else:   # if user input is not blank,
         clear()
         if not os.path.exists(path_name):   # check if user input path exists
             os.makedirs(path_name)  # if not, create it
-        Json.encode(path_name, "path.json")     # encode JSON file containing the user path
+        Json.encode(path_name, config_dir + "path.json")     # encode JSON file containing the user path
 
     global path
-    path = Json.decode("path.json", return_content=0)   # make a global variable containing the new path
+    path = Json.decode(config_dir + "path.json", return_content=0)   # make a global variable containing the new path
     clear()
 
 
@@ -246,7 +266,8 @@ def get_path():
 
     try:    # tries to decode path
         global path
-        path = Json.decode("path.json", return_content=0)
+        get_config_dir()
+        path = Json.decode(config_dir + "path.json", return_content=0)
         return path
 
     except FileNotFoundError:   # if the file is not founded, calls make_path() and makes it
@@ -273,7 +294,7 @@ def change_path():
     else:   # else: check, encode, change global variable path and returns
         if not os.path.exists(new_path):    # checks if new path exists,
             os.makedirs(new_path)   # if not, create it,
-        Json.encode(new_path, "path.json")  # then encode it
+        Json.encode(new_path, config_dir + "path.json")  # then encode it
         get_path()  # change global variable path
         clear()
         return
@@ -372,9 +393,9 @@ def make_default_config():
     changes yt_config variable, makes a new yt_config.json file
     :return: nothing
     """
-    Json.encode(youtube_default_config, "yt_config.json")
+    Json.encode(youtube_default_config, config_dir + "yt_config.json")
     global yt_config
-    yt_config = Json.decode("yt_config.json", return_content=0)
+    yt_config = Json.decode(config_dir + "yt_config.json", return_content=0)
 
 
 def apply_config():
@@ -382,9 +403,9 @@ def apply_config():
     used to write-down new changes to the yt config
     :return: nothing
     """
-    Json.encode(youtube_config, "yt_config.json")
+    Json.encode(youtube_config, config_dir + "yt_config.json")
     global yt_config
-    yt_config = Json.decode("yt_config.json", return_content=0)
+    yt_config = Json.decode(config_dir + "yt_config.json", return_content=0)
 
 
 def get_config():
@@ -394,7 +415,7 @@ def get_config():
     """
     try:    # tries to decode the yt_config.json file
         global yt_config
-        yt_config = Json.decode("yt_config.json", return_content=0)
+        yt_config = Json.decode(config_dir + "yt_config.json", return_content=0)
     except FileNotFoundError:   # if the file doesnt exists, make a default one
         make_default_config()
 
@@ -463,7 +484,7 @@ def get_channels():
     """
     try:
         global channels
-        channels = Json.decode("channels.json", return_content=0)
+        channels = Json.decode(config_dir + "channels.json", return_content=0)
 
     except FileNotFoundError:
         clear()
@@ -482,14 +503,14 @@ def add_channel(channel_name, channel_url):
     :return:  calls get_channels()
     """
     try:
-        old_channels = Json.decode("channels.json", return_content=0)
+        old_channels = Json.decode(config_dir + "channels.json", return_content=0)
         old_channels[channel_name] = channel_url
-        Json.encode(old_channels, "channels.json")
+        Json.encode(old_channels, config_dir + "channels.json")
         get_channels()
 
     except FileNotFoundError:
         new_channel = {channel_name: channel_url}
-        Json.encode(new_channel, "channels.json")
+        Json.encode(new_channel, config_dir + "channels.json")
         get_channels()
 
 
@@ -643,6 +664,7 @@ if __name__ == "__main__":
     colorama.init(autoreset=True)
     signal.signal(signal.SIGINT, signal_handler)
     color = Color()
+    get_config_dir()
     get_config()
     get_path()
 
