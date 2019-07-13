@@ -15,7 +15,6 @@
 # TODO: put descriptions in one folder, thumbnails in another,  subtitles in another, videos in another
 # TODO: add meta-data to videos or JSON
 # TODO: setup logger object, print errors at the end of downloads
-# TODO: add  option to download more than one URL on option 1
 # TODO: add thumbnail and metadata to the video file
 
 import json
@@ -25,6 +24,7 @@ import sys
 import os
 import tty
 import termios
+import shutil
 
 import youtube_dl
 import colorama
@@ -559,18 +559,42 @@ def youtube_channel_download(url):
 
 def download_choice():
     """
-    use interface for downloading videos
+    user interface for downloading videos
     :return:
     """
     clear()
     print(color.red(color.bold("--------------------------DOWNLOAD--------------------------")))
+    videos_lst = []
     video_url = str(input("Type the URL to download.\n" + enter_to_return() + "\n>:"))
 
     if video_url == "":
         clear()
         return
-
-    youtube_download(video_url)
+    else:
+        videos_lst.append(video_url)
+        while True:
+            download_another_one = input(str("Download another one? [y/N]"))
+            if download_another_one not in affirmative_choice:
+                break
+            else:
+                video_url = str(input("Type the URL to download.\n>:"))
+                videos_lst.append(video_url)
+    videos_threads = []
+    for url in videos_lst:
+        video_thread = threading.Thread(target=youtube_download, args=(url,),
+                                        daemon=True)
+        videos_threads.append(video_thread)
+    if len(videos_lst) >= 2:
+        print(color.red(color.bold("\nStarting threads...\n")))
+    else:
+        print(color.red(color.bold("\nStarting thread...\n")))
+    sleep(1)
+    for video_thread in videos_threads:
+        video_thread.start()
+    for video_thread in videos_threads:
+        while video_thread.is_alive():
+            pass
+    print()
     wait_input()
 
 
@@ -647,6 +671,7 @@ def channels_choice():
             for video_thread in videos_threads:
                 while video_thread.is_alive():
                     pass
+            print()
             wait_input()
 
         elif channel_choice == 2:
