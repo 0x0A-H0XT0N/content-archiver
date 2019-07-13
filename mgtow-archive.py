@@ -12,6 +12,10 @@
 # TODO: add options to edit, remove and download specific channels
 # TODO: move all config files to a single file
 # TODO: re-make README.md
+# TODO: put descriptions in one folder, thumbnails in another,  subtitles in another, videos in another
+# TODO: add meta-data to videos or JSON
+# TODO: setup logger object, print errors at the end of downloads
+# TODO: add  option to download more than one URL on option 1
 
 import json
 import threading
@@ -64,6 +68,18 @@ class Color:
 
     def reset(self):
         return colorama.Style.RESET_ALL
+
+
+class Logger(object):
+    # TODO
+    def debug(self, msg):
+        pass
+
+    def warning(self, msg):
+        pass
+
+    def error(self, msg):
+        print(msg)
 
 
 class Json:
@@ -316,6 +332,7 @@ youtube_config = {      # --------------------CHANGE-THIS!!!--------------------
     'ignoreerrors':             True,               # Do not stop on download errors.
     'nooverwrites':             True,               # Prevent overwriting files.
     'writedescription':         True,              # Write the video description to a .description file
+    'writeinfojson':            True,
     'writethumbnail':           True,              # Write the thumbnail image to a file
     'writeautomaticsub':        False,              # Write the automatically generated subtitles to a file
     'verbose':                  False,              # Print additional info to stdout.
@@ -440,8 +457,8 @@ def config_handler():
         get_config()
         print(color.red(color.bold("-----------------------CONFIGURE-YT-DL----------------------")))
         print("Youtube-dl version: " + color.yellow(color.bold(youtube_dl.update.__version__)))
-        print("\n" + color.yellow(color.bold("apply") + ") Apply changes (from code) using "
-                                                                        "'youtube_config'."))
+        print("\n" + color.yellow(color.bold("apply") + ") Apply changes (from code) using "'youtube_config.'))
+
         print(color.yellow(color.bold("reset") + ") Reset the config to default."))
 
         print(color.yellow(color.bold("see") + ") See current configuration options."))
