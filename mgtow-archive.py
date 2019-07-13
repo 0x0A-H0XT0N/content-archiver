@@ -16,6 +16,7 @@
 # TODO: add meta-data to videos or JSON
 # TODO: setup logger object, print errors at the end of downloads
 # TODO: add  option to download more than one URL on option 1
+# TODO: add thumbnail and metadata to the video file
 
 import json
 import threading
@@ -570,10 +571,7 @@ def download_choice():
         return
 
     youtube_download(video_url)
-    input(color.red(color.bold("\n\nFinished.\n")) +
-          "Press " +
-          color.yellow(color.bold("any key")) +
-          " to continue...\n")
+    wait_input()
 
 
 def channels_choice():
