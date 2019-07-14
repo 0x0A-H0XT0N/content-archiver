@@ -12,12 +12,9 @@
 # TODO: add options to edit, remove and download specific channels
 # TODO: move all config files to a single file
 # TODO: re-make README.md
-# TODO: put descriptions in one folder, thumbnails in another,  subtitles in another, videos in another
-# TODO: add meta-data to videos or JSON
 # TODO: setup logger object, print errors at the end of downloads
-# TODO: add thumbnail and metadata to the video file
-# TODO: add annotation, subtitle and metadata to default on default_options
 # TODO: user interface for Organizer()
+# TODO: inject metada to videos, maybe ffmpeg?
 
 import json
 import threading
@@ -122,7 +119,14 @@ class Json:
 
 
 class Organizer:
-    def sort_by_folder(self, root_path):
+    def get_sort_type(self):
+        try:
+            global sort_type
+            sort_type = Json.decode("sort_type.json", return_content=0)
+        except FileNotFoundError:
+            self.all_in_one(path)
+
+    def sort_by_type(self, root_path):
         for channel in self.get_downloaded_channels(root_path):
             self.make_folder_sorted_directories(channel + "/")
             for file in os.listdir(channel):
@@ -153,7 +157,8 @@ class Organizer:
                 elif os.path.isdir(absolute_file_path):
                     # handle?
                     pass
-        wait_input()
+        Json.encode("sort_by_type", "sort_type.json")
+        self.get_sort_type()
 
     def all_in_one(self, root_path):
         for channel in self.get_downloaded_channels(root_path):
@@ -163,7 +168,8 @@ class Organizer:
                     for file in os.listdir(absolute_folder_path):
                         os.rename(absolute_folder_path + "/" + file, channel + "/" + file)
             self.remove_folder_sorted_directories(channel + "/")
-        wait_input()
+        Json.encode("all_in_one", "sort_type.json")
+        self.get_sort_type()
 
     def remove_folder_sorted_directories(self, channel_path):
         for folder in os.listdir(channel_path):
@@ -285,11 +291,12 @@ def show_menu():
     print(color.red("   ██║  ██║██║  ██║╚██████╗██║  ██║██║ ╚████╔╝ ███████╗"))
     print(color.red("   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝"))
     print("                 by " + color.red(color.bold("PhoenixK7PB")))
-    print(color.yellow(color.bold("1") + ") Download video/playlist/channel   " +
+    print(color.yellow(color.bold("1") + ") Download video/playlist/channel  " +
                        color.red(color.bold("|" + "  " + color.yellow(color.bold("conf") + ") Configure yt-dl")))))
-    print(color.yellow(color.bold("2") + ") Channels                          " +
+    print(color.yellow(color.bold("2") + ") Channels                         " +
                        color.red(color.bold("|" + "  " + color.yellow(color.bold("path") + ") Set download path")))))
-    print(color.yellow(color.bold("0") + ") Exit"))
+    print(color.yellow(color.bold("0") + ") Exit                             " +
+                       color.red(color.bold("|" + "  " + color.yellow(color.bold("sort") + ") Set sorting type")))))
 
 
 def youtube_hooker(video):
@@ -373,10 +380,9 @@ def change_path():
     option for changing/making new path
     :return: nothing, just changes path global variable
     """
-
     clear()
-    print(color.red(color.bold("------------------------CHANGE-PATH-------------------------")))
     get_path()
+    print(color.red(color.bold("------------------------CHANGE-PATH-------------------------")))
     print("Your current path is: " + color.yellow(color.bold(path)))
     new_path = str(input("\nType your new path...\n" + enter_to_return() +
                          "\n>:"))
@@ -391,6 +397,30 @@ def change_path():
         get_path()  # change global variable path
         clear()
         return
+
+
+def set_sorting_type():
+    clear()
+    organizer.get_sort_type()
+    print(color.red(color.bold("------------------------SORTING-TYPE------------------------")))
+    print(color.red(color.bold("1) All-in-one")) +
+          ": This type of sorting will result in everything\ndownloaded in just one folder, only organized by channels."
+          "\n%s: PATH/channel_name/downloaded_files\n" % color.yellow(color.bold("i.e.")))
+    print(color.red(color.bold("2) Sort-by-type")) +
+          ": This type of sorting will result in 6 folders:\n"
+          "annotations, descriptions, metadata, videos, thumbnails, subtitles."
+          "\n%s: PATH/channel_name/file_type/downloaded_files\n" % color.yellow(color.bold("i.e.")))
+    print("Current sorting type: %s" % color.red(color.bold(sort_type)))
+    print(enter_to_return())
+    sorting_choice = str(input("Choose:\n>:"))
+    clear()
+    if sorting_choice == "":
+        return
+    elif sorting_choice.lower() == "1":
+        organizer.all_in_one(path)
+    elif sorting_choice.lower() == "2":
+        organizer.sort_by_type(path)
+    wait_input()
 
 
 youtube_config = {      # --------------------CHANGE-THIS!!!--------------------- #
@@ -789,10 +819,11 @@ if __name__ == "__main__":
     colorama.init(autoreset=True)
     signal.signal(signal.SIGINT, signal_handler)
     color = Color()
+    organizer = Organizer()
     get_config_dir()
     get_config()
     get_path()
-    Organizer().all_in_one(path)
+    organizer.get_sort_type()
 
     maintainer = True
 
@@ -816,6 +847,10 @@ if __name__ == "__main__":
 
             elif choice.lower() == "conf":
                 config_handler()
+                continue
+
+            elif choice.lower() == "sort":
+                set_sorting_type()
                 continue
 
             else:   # if user type something that is not an option, ignore and wait for another input
