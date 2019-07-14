@@ -431,11 +431,13 @@ yt_list_of_channels_config = {      # --------------------CHANGE-THIS!!!--------
     'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
     'restrictfilenames':        True,               # Do not allow "&" and spaces in file names
     'no_warnings':              True,               # Do not print out anything for warnings.
-    'ignoreerrors':             False,               # Do not stop on download errors.
+    'ignoreerrors':             True,               # Do not stop on download errors.
     'nooverwrites':             True,               # Prevent overwriting files.
     'writedescription':         True,              # Write the video description to a .description file
+    'writeinfojson':            True,
     'writethumbnail':           True,              # Write the thumbnail image to a file
-    'writeautomaticsub':        False,              # Write the automatically generated subtitles to a file
+    'writeautomaticsub':        True,              # Write the automatically generated subtitles to a file
+    'writeannotations':         True,
     'verbose':                  False,              # Print additional info to stdout.
     'quiet':                    False,              # Do not print messages to stdout.
     'simulate':                 False,              # Do not download the video files.
@@ -462,8 +464,10 @@ youtube_default_config = {      # -----------------DO-NOT-CHANGE-THIS!!!--------
     'ignoreerrors':             True,               # Do not stop on download errors.
     'nooverwrites':             True,               # Prevent overwriting files.
     'writedescription':         True,              # Write the video description to a .description file
+    'writeinfojson':            True,
     'writethumbnail':           True,              # Write the thumbnail image to a file
-    'writeautomaticsub':        False,              # Write the automatically generated subtitles to a file
+    'writeautomaticsub':        True,              # Write the automatically generated subtitles to a file
+    'writeannotations':         True,
     'verbose':                  False,              # Print additional info to stdout.
     'quiet':                    False,              # Do not print messages to stdout.
     'simulate':                 False,              # Do not download the video files.
