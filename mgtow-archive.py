@@ -13,7 +13,6 @@
 # TODO: move all config files to a single file
 # TODO: re-make README.md
 # TODO: setup logger object, print errors at the end of downloads
-# TODO: user interface for Organizer()
 # TODO: inject metada to videos, maybe ffmpeg?
 
 import json
@@ -321,7 +320,7 @@ def youtube_hooker(video):
         # this happens because threads/daemons consumes machine resources and time
         # if you want to download a full channel but you already have some videos, dont use the channels tab
         print("\n     " + color.yellow(color.bold("LIMIT OF VIDEOS FOUNDED FOR CURRENT CHANNEL,")) +
-              "\n     " + color.red(color.bold("EXITING DAEMON: %s \n" % threading.current_thread())))
+              "\n     " + color.red(color.bold("EXITING THREAD: %s \n" % threading.current_thread())))
         sys.exit(0)
 
 
@@ -410,7 +409,7 @@ def set_sorting_type():
           ": This type of sorting will result in 6 folders:\n"
           "annotations, descriptions, metadata, videos, thumbnails, subtitles."
           "\n%s: PATH/channel_name/file_type/downloaded_files\n" % color.yellow(color.bold("i.e.")))
-    print("Current sorting type: %s" % color.red(color.bold(sort_type)))
+    print("Current sorting: %s" % color.red(color.bold(sort_type)))
     print(enter_to_return())
     sorting_choice = str(input("Choose:\n>:"))
     clear()
@@ -753,7 +752,16 @@ def channels_choice():
                   " to cancel download.\n" +
                   color.yellow(color.bold("ENTER")) +
                   " to resume program after the download is finished.")
-            sleep(2)
+            sleep(1)
+
+            sort_again = False
+            if sort_type == "sort_by_type":
+                print("\nSorting by type detected, running back to all in one...\n"
+                      "After the download is completed, sorting by type will be re-applied.\n" +
+                      color.red(color.bold("DO NOT EXIT THE DOWNLOAD!!!")))
+                organizer.all_in_one(path)
+                sort_again = True
+            sleep(3)
             channel_count = 0
             videos_threads = []
             for channel in channels:
@@ -775,6 +783,10 @@ def channels_choice():
             for video_thread in videos_threads:
                 while video_thread.is_alive():
                     pass
+            if sort_again:
+                print(color.yellow(color.bold("Re-applying sorting type...")))
+                organizer.sort_by_type(path)
+                print(color.yellow(color.bold("DONE!")))
             print()
             wait_input()
 
