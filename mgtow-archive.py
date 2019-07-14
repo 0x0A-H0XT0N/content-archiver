@@ -7,7 +7,7 @@
 # https://github.com/PhoenixK7PB/mgtow-archive
 #
 # TODO: add choose option for format when downloading
-# TODO: add a logger that saves every error and prints it at the end of the download
+# TODO: add a logger that saves every error and prints it at the end of the download FINISH IT
 # TODO: add torrent options
 # TODO: add options to edit, remove and download specific channels
 # TODO: move all config files to a single file
@@ -16,6 +16,8 @@
 # TODO: add meta-data to videos or JSON
 # TODO: setup logger object, print errors at the end of downloads
 # TODO: add thumbnail and metadata to the video file
+# TODO: add annotation, subtitle and metadata to default on default_options
+# TODO: user interface for Organizer()
 
 import json
 import threading
@@ -24,7 +26,7 @@ import sys
 import os
 import tty
 import termios
-import shutil
+import fnmatch
 
 import youtube_dl
 import colorama
@@ -40,6 +42,8 @@ founded_videos_dict = {}    # leave empty, used on youtube_hooker
 founded_videos_limit = 10    # limit of videos that can be founded before exiting, default is 10, SHOULD BE INT
 
 original_stdin_settings = termios.tcgetattr(sys.stdin)
+
+sorted_folders_names = ["subtitles", "thumbnails", "descriptions", "metadata", "videos", "annotations"]
 
 
 class Color:
@@ -70,7 +74,6 @@ class Color:
     def reset(self):
         return colorama.Style.RESET_ALL
 
-
 class Logger(object):
     # TODO
     def debug(self, msg):
@@ -81,7 +84,6 @@ class Logger(object):
 
     def error(self, msg):
         print(msg)
-
 
 class Json:
     """
@@ -117,6 +119,73 @@ class Json:
 
             if return_content == 0:
                 return json_decode
+
+
+class Organizer:
+    def sort_by_folder(self, root_path):
+        for channel in self.get_downloaded_channels(root_path):
+            self.make_folder_sorted_directories(channel + "/")
+            for file in os.listdir(channel):
+                absolute_file_path = channel + "/" + file
+                if os.path.isfile(absolute_file_path):
+                    if fnmatch.fnmatch(file, "*.vtt"):
+                        os.rename(absolute_file_path, channel + "/subtitles/" + file)
+                    elif fnmatch.fnmatch(file, "*.jpg"):
+                        os.rename(absolute_file_path, channel + "/thumbnails/" + file)
+                    elif fnmatch.fnmatch(file, "*.description"):
+                        os.rename(absolute_file_path, channel + "/descriptions/" + file)
+                    elif fnmatch.fnmatch(file, "*.info.json"):
+                        os.rename(absolute_file_path, channel + "/metadata/" + file)
+                    elif fnmatch.fnmatch(file, "*.webm"):
+                        os.rename(absolute_file_path, channel + "/videos/" + file)
+                    elif fnmatch.fnmatch(file, "*.m4a"):
+                        os.rename(absolute_file_path, channel + "/videos/" + file)
+                    elif fnmatch.fnmatch(file, "*.mp4"):
+                        os.rename(absolute_file_path, channel + "/videos/" + file)
+                    elif fnmatch.fnmatch(file, "*.mp3"):
+                        os.rename(absolute_file_path, channel + "/videos/" + file)
+                    elif fnmatch.fnmatch(file, "*.opus"):
+                        os.rename(absolute_file_path, channel + "/videos/" + file)
+                    elif fnmatch.fnmatch(file, "*.mkv"):
+                        os.rename(absolute_file_path, channel + "/videos/" + file)
+                    elif fnmatch.fnmatch(file, "*.annotations.xml"):
+                        os.rename(absolute_file_path, channel + "/annotations/" + file)
+                elif os.path.isdir(absolute_file_path):
+                    # handle?
+                    pass
+        wait_input()
+
+    def all_in_one(self, root_path):
+        for channel in self.get_downloaded_channels(root_path):
+            for folder in os.listdir(channel):
+                absolute_folder_path = channel + "/" + folder
+                if os.path.isdir(absolute_folder_path) and folder in sorted_folders_names:
+                    for file in os.listdir(absolute_folder_path):
+                        os.rename(absolute_folder_path + "/" + file, channel + "/" + file)
+            self.remove_folder_sorted_directories(channel + "/")
+        wait_input()
+
+    def remove_folder_sorted_directories(self, channel_path):
+        for folder in os.listdir(channel_path):
+            absolute_folder_path = channel_path + "/" + folder
+            if os.path.isdir(absolute_folder_path):
+                try:
+                    os.rmdir(absolute_folder_path)
+                except OSError:
+                    print(color.red(color.bold("\n    ERROR AT '%s':\n"
+                                               "    DIRECTORY NOT EMPTY, NOT REMOVING IT!\n") % absolute_folder_path))
+
+    def make_folder_sorted_directories(self, channel_path):
+        for folder_name in sorted_folders_names:
+            if not os.path.exists(channel_path + "/" + folder_name):
+                os.makedirs(channel_path + "/" + folder_name)
+
+    def get_downloaded_channels(self, root_path):
+        downloaded_channels_list = []
+        for directory in os.listdir(os.path.abspath(root_path)):
+            if os.path.isdir(root_path + directory):
+                downloaded_channels_list.append(root_path + directory)
+        return downloaded_channels_list
 
 
 def clear():
@@ -267,13 +336,13 @@ def make_path():
         clear()
         if not os.path.exists(str(Path.home())):    # check if user home exists,
             os.makedirs(str(Path.home()))   # if not, create it
-        Json.encode(str(Path.home()), config_dir + "path.json")  # encode JSON file containing the path (home path in this case)
+        Json.encode(str(Path.home() + "/"), config_dir + "path.json")  # encode JSON file containing the path (home path in this case)
 
     else:   # if user input is not blank,
         clear()
         if not os.path.exists(path_name):   # check if user input path exists
             os.makedirs(path_name)  # if not, create it
-        Json.encode(path_name, config_dir + "path.json")     # encode JSON file containing the user path
+        Json.encode(path_name + "/", config_dir + "path.json")     # encode JSON file containing the user path
 
     global path
     path = Json.decode(config_dir + "path.json", return_content=0)   # make a global variable containing the new path
@@ -318,7 +387,7 @@ def change_path():
     else:   # else: check, encode, change global variable path and returns
         if not os.path.exists(new_path):    # checks if new path exists,
             os.makedirs(new_path)   # if not, create it,
-        Json.encode(new_path, config_dir + "path.json")  # then encode it
+        Json.encode(new_path + "/", config_dir + "path.json")  # then encode it
         get_path()  # change global variable path
         clear()
         return
@@ -335,7 +404,8 @@ youtube_config = {      # --------------------CHANGE-THIS!!!--------------------
     'writedescription':         True,              # Write the video description to a .description file
     'writeinfojson':            True,
     'writethumbnail':           True,              # Write the thumbnail image to a file
-    'writeautomaticsub':        False,              # Write the automatically generated subtitles to a file
+    'writeautomaticsub':        True,              # Write the automatically generated subtitles to a file
+    'writeannotations':         True,
     'verbose':                  False,              # Print additional info to stdout.
     'quiet':                    False,              # Do not print messages to stdout.
     'simulate':                 False,              # Do not download the video files.
@@ -718,6 +788,7 @@ if __name__ == "__main__":
     get_config_dir()
     get_config()
     get_path()
+    Organizer().all_in_one(path)
 
     maintainer = True
 
