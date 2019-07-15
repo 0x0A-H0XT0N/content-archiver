@@ -7,12 +7,10 @@
 # https://github.com/PhoenixK7PB/mgtow-archive
 #
 # TODO: add choose option for format when downloading
-# TODO: add a logger that saves every error and prints it at the end of the download FINISH IT
 # TODO: add torrent options
 # TODO: add options to edit, remove and download specific channels
 # TODO: move all config files to a single file
 # TODO: re-make README.md
-# TODO: setup logger object, print errors at the end of downloads
 # TODO: inject metada to videos, maybe ffmpeg?
 
 import json
@@ -40,6 +38,9 @@ founded_videos_limit = 10    # limit of videos that can be founded before exitin
 original_stdin_settings = termios.tcgetattr(sys.stdin)
 
 sorted_folders_names = ["subtitles", "thumbnails", "descriptions", "metadata", "videos", "annotations"]
+
+warnings = []
+errors = []
 
 
 class Color:
@@ -70,16 +71,21 @@ class Color:
     def reset(self):
         return colorama.Style.RESET_ALL
 
+
 class Logger(object):
-    # TODO
+
     def debug(self, msg):
-        pass
+        print(msg)
 
     def warning(self, msg):
-        pass
+        global warnings
+        return warnings.append(msg)
 
     def error(self, msg):
-        print(msg)
+        global errors
+        print(color.red(color.bold(msg)))
+        return errors.append(color.red(color.bold(str(msg))))
+
 
 class Json:
     """
@@ -121,7 +127,7 @@ class Organizer:
     def get_sort_type(self):
         try:
             global sort_type
-            sort_type = Json.decode("sort_type.json", return_content=0)
+            sort_type = Json.decode(config_dir + "sort_type.json", return_content=0)
         except FileNotFoundError:
             self.all_in_one(path)
 
@@ -156,7 +162,7 @@ class Organizer:
                 elif os.path.isdir(absolute_file_path):
                     # handle?
                     pass
-        Json.encode("sort_by_type", "sort_type.json")
+        Json.encode("sort_by_type", config_dir + "sort_type.json")
         self.get_sort_type()
 
     def all_in_one(self, root_path):
@@ -167,7 +173,7 @@ class Organizer:
                     for file in os.listdir(absolute_folder_path):
                         os.rename(absolute_folder_path + "/" + file, channel + "/" + file)
             self.remove_folder_sorted_directories(channel + "/")
-        Json.encode("all_in_one", "sort_type.json")
+        Json.encode("all_in_one", config_dir + "sort_type.json")
         self.get_sort_type()
 
     def remove_folder_sorted_directories(self, channel_path):
@@ -424,17 +430,19 @@ def set_sorting_type():
 
 youtube_config = {      # --------------------CHANGE-THIS!!!--------------------- #
 
+    'logger':                   Logger(),           # Logger instance, don't change it!
+
     'format':                   'bestaudio/best',   # Video format code. See options.py for more information.
     'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
     'restrictfilenames':        True,               # Do not allow "&" and spaces in file names
     'no_warnings':              True,               # Do not print out anything for warnings.
     'ignoreerrors':             True,               # Do not stop on download errors.
     'nooverwrites':             True,               # Prevent overwriting files.
-    'writedescription':         True,              # Write the video description to a .description file
-    'writeinfojson':            True,
-    'writethumbnail':           True,              # Write the thumbnail image to a file
-    'writeautomaticsub':        True,              # Write the automatically generated subtitles to a file
-    'writeannotations':         True,
+    'writedescription':         True,               # Write the video description to a .description file
+    'writeinfojson':            True,               # Write metadata to a json file
+    'writethumbnail':           True,               # Write the thumbnail image to a file
+    'writeautomaticsub':        True,               # Write the automatically generated subtitles to a file
+    'writeannotations':         True,               # Write video annotations
     'verbose':                  False,              # Print additional info to stdout.
     'quiet':                    False,              # Do not print messages to stdout.
     'simulate':                 False,              # Do not download the video files.
@@ -454,7 +462,8 @@ youtube_config = {      # --------------------CHANGE-THIS!!!--------------------
 
 yt_list_of_channels_config = {      # --------------------CHANGE-THIS!!!--------------------- #
 
-    'progress_hooks': [youtube_hooker],     # DONT CHANGE
+    'logger':                   Logger(),           # Logger instance, don't change it!
+    'progress_hooks':           [youtube_hooker],   # DONT CHANGE
 
     'format':                   'bestaudio/best',   # Video format code. See options.py for more information.
     'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
@@ -462,11 +471,11 @@ yt_list_of_channels_config = {      # --------------------CHANGE-THIS!!!--------
     'no_warnings':              True,               # Do not print out anything for warnings.
     'ignoreerrors':             True,               # Do not stop on download errors.
     'nooverwrites':             True,               # Prevent overwriting files.
-    'writedescription':         True,              # Write the video description to a .description file
-    'writeinfojson':            True,
-    'writethumbnail':           True,              # Write the thumbnail image to a file
-    'writeautomaticsub':        True,              # Write the automatically generated subtitles to a file
-    'writeannotations':         True,
+    'writedescription':         True,               # Write the video description to a .description file
+    'writeinfojson':            True,               # Write metadata to a json file
+    'writethumbnail':           True,               # Write the thumbnail image to a file
+    'writeautomaticsub':        True,               # Write the automatically generated subtitles to a file
+    'writeannotations':         True,               # Write video annotations
     'verbose':                  False,              # Print additional info to stdout.
     'quiet':                    False,              # Do not print messages to stdout.
     'simulate':                 False,              # Do not download the video files.
@@ -483,69 +492,6 @@ yt_list_of_channels_config = {      # --------------------CHANGE-THIS!!!--------
     'forceduration':            False,              # Force printing duration.
     'forcejson':                False,              # Force printing info_dict as JSON.
 }
-
-youtube_default_config = {      # -----------------DO-NOT-CHANGE-THIS!!!----------------- #
-
-    'format':                   'bestaudio/best',   # Video format code. See options.py for more information.
-    'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
-    'restrictfilenames':        True,               # Do not allow "&" and spaces in file names
-    'no_warnings':              True,               # Do not print out anything for warnings.
-    'ignoreerrors':             True,               # Do not stop on download errors.
-    'nooverwrites':             True,               # Prevent overwriting files.
-    'writedescription':         True,              # Write the video description to a .description file
-    'writeinfojson':            True,
-    'writethumbnail':           True,              # Write the thumbnail image to a file
-    'writeautomaticsub':        True,              # Write the automatically generated subtitles to a file
-    'writeannotations':         True,
-    'verbose':                  False,              # Print additional info to stdout.
-    'quiet':                    False,              # Do not print messages to stdout.
-    'simulate':                 False,              # Do not download the video files.
-    'skip_download':            False,              # Skip the actual download of the video file
-    'noplaylist':               False,              # Download single video instead of a playlist if in doubt.
-    'playlistrandom':           False,              # Download playlist items in random order.
-    'playlistreverse':          False,              # Download playlist items in reverse order.
-    'forceurl':                 False,              # Force printing final URL.
-    'forcetitle':               False,              # Force printing title.
-    'forceid':                  False,              # Force printing ID.
-    'forcethumbnail':           False,              # Force printing thumbnail URL.
-    'forcedescription':         False,              # Force printing description.
-    'forcefilename':            False,              # Force printing final filename.
-    'forceduration':            False,              # Force printing duration.
-    'forcejson':                False,              # Force printing info_dict as JSON.
-}
-
-
-def make_default_config():
-    """
-    function to reset the yt-dl config JSON
-    changes yt_config variable, makes a new yt_config.json file
-    :return: nothing
-    """
-    Json.encode(youtube_default_config, config_dir + "yt_config.json")
-    global yt_config
-    yt_config = Json.decode(config_dir + "yt_config.json", return_content=0)
-
-
-def apply_config():
-    """
-    used to write-down new changes to the yt config
-    :return: nothing
-    """
-    Json.encode(youtube_config, config_dir + "yt_config.json")
-    global yt_config
-    yt_config = Json.decode(config_dir + "yt_config.json", return_content=0)
-
-
-def get_config():
-    """
-    access the json configuration file and make a global variable called yt_config
-    :return: nothing
-    """
-    try:    # tries to decode the yt_config.json file
-        global yt_config
-        yt_config = Json.decode(config_dir + "yt_config.json", return_content=0)
-    except FileNotFoundError:   # if the file doesnt exists, make a default one
-        make_default_config()
 
 
 def config_handler():
@@ -558,50 +504,13 @@ def config_handler():
 
     while config_maintainer:
         clear()
-        get_config()
         print(color.red(color.bold("-----------------------CONFIGURE-YT-DL----------------------")))
         print("Youtube-dl version: " + color.yellow(color.bold(youtube_dl.update.__version__)))
-        print("\n" + color.yellow(color.bold("apply") + ") Apply changes (from code) using "'youtube_config.'))
-
-        print(color.yellow(color.bold("reset") + ") Reset the config to default."))
-
-        print(color.yellow(color.bold("see") + ") See current configuration options."))
-        print(enter_to_return())
-        config_choice = str(input(">:"))
-
-        if config_choice == "":
-            return
-
-        elif config_choice.lower() == 'apply':
-            clear()
-            apply_config()
-            print(color.red(color.bold("--------------------CONFIGURATION-APPLIED-------------------")))
-            wait_input()
-            return
-
-        elif config_choice.lower() == 'reset':
-            clear()
-            print(color.red(color.bold("---------------------RESET-CONFIGURATION--------------------")))
-            sure = str(input(color.yellow(color.bold("Current modifications will be ")) +
-                             color.red(color.bold("lost")) + color.yellow(color.bold(".\n")) +
-                             color.yellow(color.bold("Proceed? [y/N]")) + "\n>:"))
-            if sure in affirmative_choice:
-                make_default_config()
-                continue
-            else:
-                continue
-
-        elif config_choice.lower() == 'see':
-            clear()
-            get_config()
-            print(color.red(color.bold("--------------------CONFIGURATION-OPTIONS-------------------")))
-            print("Found " + color.yellow(color.bold(str(len(yt_config)))) +
-                  " options...\n")
-            for config in yt_config:
-                print(color.yellow(color.bold(str(config)) + color.bold(": ") +
-                                   color.red(color.bold(str(yt_config[config])))))
-            print()
-            wait_input()
+        print()
+        print(color.red(color.bold("All changes to the configuration must be done manually on the code itself.")))
+        print()
+        wait_input()
+        break
 
 
 def get_channels():
@@ -648,7 +557,7 @@ def youtube_download(url):
     :param url: url of the channel being downloaded
     :return: nothing
     """
-    youtube_dl.YoutubeDL(yt_config).download([url])
+    youtube_dl.YoutubeDL(youtube_config).download([url])
 
 
 def youtube_channel_download(url):
@@ -784,9 +693,15 @@ def channels_choice():
                 while video_thread.is_alive():
                     pass
             if sort_again:
-                print(color.yellow(color.bold("Re-applying sorting type...")))
+                print(color.yellow(color.bold(" Re-applying sorting type...")))
                 organizer.sort_by_type(path)
-                print(color.yellow(color.bold("DONE!")))
+                print(color.yellow(color.bold(" DONE!")))
+            if len(warnings) >= 1:
+                print("\n   Download fished with %d warnings..." % len(warnings))
+            if len(errors) >= 1:
+                print(color.red(color.bold("\n   Download fished with %s errors..." % str(len(errors)))))
+                for error in errors:
+                    print(color.red(color.bold(error)))
             print()
             wait_input()
 
@@ -833,7 +748,6 @@ if __name__ == "__main__":
     color = Color()
     organizer = Organizer()
     get_config_dir()
-    get_config()
     get_path()
     organizer.get_sort_type()
 
