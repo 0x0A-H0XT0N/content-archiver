@@ -589,8 +589,26 @@ def download_choice():
             if download_another_one not in affirmative_choice:
                 break
             else:
-                video_url = str(input("Type the URL to download.\n>:"))
-                videos_lst.append(video_url)
+                video_url = str(input("Type the URL to download.\n" + enter_to_return() + "\n>:"))
+                if video_url == "":
+                    clear()
+                    break
+                else:
+                    videos_lst.append(video_url)
+    clear()
+    print(color.yellow(color.bold("CTRL + C")) +
+          " to cancel download.\n")
+    sleep(1)
+
+    sort_again = False
+    if sort_type == "sort_by_type":
+        print("\nSorting by type detected, running back to all in one...\n"
+              "After the download is completed, sorting by type will be re-applied.\n" +
+              color.red(color.bold("DO NOT EXIT THE DOWNLOAD!!!")))
+        organizer.all_in_one(path)
+        sort_again = True
+    sleep(1)
+
     videos_threads = []
     for url in videos_lst:
         video_thread = threading.Thread(target=youtube_download, args=(url,),
@@ -601,11 +619,25 @@ def download_choice():
     else:
         print(color.red(color.bold("\nStarting thread...\n")))
     sleep(1)
+
     for video_thread in videos_threads:
         video_thread.start()
+
     for video_thread in videos_threads:
         while video_thread.is_alive():
             pass
+
+    if sort_again:
+        print(color.yellow(color.bold(" Re-applying sorting type...")))
+        organizer.sort_by_type(path)
+        print(color.yellow(color.bold(" DONE!")))
+
+    if len(warnings) >= 1:
+        print("\n   Download fished with %d warnings..." % len(warnings))
+    if len(errors) >= 1:
+        print(color.red(color.bold("\n   Download fished with %s errors..." % str(len(errors)))))
+        for error in errors:
+            print(color.red(color.bold(error)))
     print()
     wait_input()
 
@@ -658,9 +690,7 @@ def channels_choice():
 
             clear()
             print(color.yellow(color.bold("CTRL + C")) +
-                  " to cancel download.\n" +
-                  color.yellow(color.bold("ENTER")) +
-                  " to resume program after the download is finished.")
+                  " to cancel download.\n")
             sleep(1)
 
             sort_again = False
@@ -670,7 +700,8 @@ def channels_choice():
                       color.red(color.bold("DO NOT EXIT THE DOWNLOAD!!!")))
                 organizer.all_in_one(path)
                 sort_again = True
-            sleep(3)
+            sleep(1)
+
             channel_count = 0
             videos_threads = []
             for channel in channels:
@@ -689,13 +720,16 @@ def channels_choice():
             sleep(1)
             for video_thread in videos_threads:
                 video_thread.start()
+
             for video_thread in videos_threads:
                 while video_thread.is_alive():
                     pass
+
             if sort_again:
                 print(color.yellow(color.bold(" Re-applying sorting type...")))
                 organizer.sort_by_type(path)
                 print(color.yellow(color.bold(" DONE!")))
+
             if len(warnings) >= 1:
                 print("\n   Download fished with %d warnings..." % len(warnings))
             if len(errors) >= 1:
