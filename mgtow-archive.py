@@ -530,7 +530,6 @@ def youtube_download(url):
     :return: nothing
     """
     youtube_dl.YoutubeDL(youtube_config).download([url])
-    sys.exit(0)
 
 
 def youtube_channel_download(url):
@@ -540,7 +539,6 @@ def youtube_channel_download(url):
     :return: nothing
     """
     youtube_dl.YoutubeDL(yt_list_of_channels_config).download([url])
-    sys.exit(0)
 
 
 def download_choice():
