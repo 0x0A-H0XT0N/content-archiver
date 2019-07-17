@@ -38,7 +38,7 @@ original_stdin_settings = termios.tcgetattr(sys.stdin)
 
 sorted_folders_names = ["subtitles", "thumbnails", "descriptions", "metadata", "videos", "annotations"]
 
-warnings = []
+warnings = 0
 errors = []
 
 
@@ -78,7 +78,7 @@ class Logger(object):
 
     def warning(self, msg):
         global warnings
-        return warnings.append(msg)
+        warnings += 1
 
     def error(self, msg):
         global errors
@@ -431,6 +431,8 @@ youtube_config = {      # --------------------CHANGE-THIS!!!--------------------
 
     'logger':                   Logger(),           # Logger instance, don't change it!
 
+    'download_archive':         get_path() + '/download_archive',
+
     'format':                   'bestaudio/best',   # Video format code. See options.py for more information.
     'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
     'restrictfilenames':        True,               # Do not allow "&" and spaces in file names
@@ -462,7 +464,9 @@ youtube_config = {      # --------------------CHANGE-THIS!!!--------------------
 yt_list_of_channels_config = {      # --------------------CHANGE-THIS!!!--------------------- #
 
     'logger':                   Logger(),           # Logger instance, don't change it!
-    'progress_hooks':           [youtube_hooker],   # DONT CHANGE
+    # 'progress_hooks':           [youtube_hooker],   # DONT CHANGE
+
+    'download_archive':         get_path() + '/download_archive',
 
     'format':                   'bestaudio/best',   # Video format code. See options.py for more information.
     'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
@@ -557,6 +561,7 @@ def youtube_download(url):
     :return: nothing
     """
     youtube_dl.YoutubeDL(youtube_config).download([url])
+    sys.exit(0)
 
 
 def youtube_channel_download(url):
@@ -566,6 +571,7 @@ def youtube_channel_download(url):
     :return: nothing
     """
     youtube_dl.YoutubeDL(yt_list_of_channels_config).download([url])
+    sys.exit(0)
 
 
 def download_choice():
@@ -631,8 +637,8 @@ def download_choice():
         organizer.sort_by_type(path)
         print(color.yellow(color.bold(" DONE!")))
 
-    if len(warnings) >= 1:
-        print("\n   Download fished with %d warnings..." % len(warnings))
+    if warnings >= 1:
+        print("\n   Download fished with %d warnings..." % warnings)
     if len(errors) >= 1:
         print(color.red(color.bold("\n   Download fished with %s errors..." % str(len(errors)))))
         for error in errors:
@@ -729,8 +735,8 @@ def channels_choice():
                 organizer.sort_by_type(path)
                 print(color.yellow(color.bold(" DONE!")))
 
-            if len(warnings) >= 1:
-                print("\n   Download fished with %d warnings..." % len(warnings))
+            if warnings >= 1:
+                print("\n   Download fished with %d warnings..." % warnings)
             if len(errors) >= 1:
                 print(color.red(color.bold("\n   Download fished with %s errors..." % str(len(errors)))))
                 for error in errors:
