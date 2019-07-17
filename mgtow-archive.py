@@ -31,9 +31,6 @@ from time import sleep
 affirmative_choice = ["y", "yes", "s", "sim", "yeah", "yah", "ya"]  # affirmative choices, used on user interaction
 negative_choice = ["n", "no", "nao", "na", "nop", "nah"]    # negative choices, used on user interaction
 
-founded_videos_dict = {}    # leave empty, used on youtube_hooker
-founded_videos_limit = 10    # limit of videos that can be founded before exiting, default is 10, SHOULD BE INT
-
 original_stdin_settings = termios.tcgetattr(sys.stdin)
 
 sorted_folders_names = ["subtitles", "thumbnails", "descriptions", "metadata", "videos", "annotations"]
@@ -303,32 +300,6 @@ def show_menu():
                        color.red(color.bold("|" + "  " + color.yellow(color.bold("sort") + ") Set sorting type")))))
 
 
-def youtube_hooker(video):
-    """
-    log and check how much videos have been founded on the machine, this is used by every thread/daemon
-    :param video: video being downloaded
-    :return: if more than "X" videos have been founded on the machine, exit the current thread/download
-    """
-
-    if threading.current_thread() not in founded_videos_dict:
-        # check if the current thread have already been logged on the dict,
-        # if not, create a key using the current thread name and gives to it a value 0
-        founded_videos_dict[threading.current_thread()] = 0
-
-    if len(video) <= 4:
-        # check if the video dict properties has more than 4 keys, this happens because when a video is founded, yt-dl
-        # creates only 4 keys to it on the hooker dict
-        founded_videos_dict[threading.current_thread()] += 1
-
-    if founded_videos_dict[threading.current_thread()] >= founded_videos_limit:
-        # if more than or equal than founded_videos_limit, exit the thread
-        # this happens because threads/daemons consumes machine resources and time
-        # if you want to download a full channel but you already have some videos, dont use the channels tab
-        print("\n     " + color.yellow(color.bold("LIMIT OF VIDEOS FOUNDED FOR CURRENT CHANNEL,")) +
-              "\n     " + color.red(color.bold("EXITING THREAD: %s \n" % threading.current_thread())))
-        sys.exit(0)
-
-
 def make_path():
     """
     create a JSON file on the program directory containing the path for downloaded videos,
@@ -431,8 +402,6 @@ youtube_config = {      # --------------------CHANGE-THIS!!!--------------------
 
     'logger':                   Logger(),           # Logger instance, don't change it!
 
-    'download_archive':         get_path() + '/download_archive',
-
     'format':                   'bestaudio/best',   # Video format code. See options.py for more information.
     'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
     'restrictfilenames':        True,               # Do not allow "&" and spaces in file names
@@ -464,7 +433,6 @@ youtube_config = {      # --------------------CHANGE-THIS!!!--------------------
 yt_list_of_channels_config = {      # --------------------CHANGE-THIS!!!--------------------- #
 
     'logger':                   Logger(),           # Logger instance, don't change it!
-    # 'progress_hooks':           [youtube_hooker],   # DONT CHANGE
 
     'download_archive':         get_path() + '/download_archive',
 
