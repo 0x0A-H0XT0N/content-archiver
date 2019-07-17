@@ -614,8 +614,23 @@ def download_choice():
         sort_again = True
     sleep(0.5)
 
+    videos_threads = []
     for url in videos_lst:
-        youtube_download(url)
+        video_thread = threading.Thread(target=youtube_download, args=(url,),
+                                        daemon=True)
+        videos_threads.append(video_thread)
+    if len(videos_lst) >= 2:
+        print(color.red(color.bold("\nStarting threads...\n")))
+    else:
+        print(color.red(color.bold("\nStarting thread...\n")))
+    sleep(0.5)
+
+    for video_thread in videos_threads:
+        video_thread.start()
+
+    for video_thread in videos_threads:
+        while video_thread.is_alive():
+            pass
 
     if sort_again:
         print(color.yellow(color.bold(" Re-applying sorting type...")))
@@ -693,6 +708,7 @@ def channels_choice():
             sleep(0.5)
 
             channel_count = 0
+            videos_threads = []
             for channel in channels:
                 channel_count += 1
                 print()
@@ -701,7 +717,18 @@ def channels_choice():
                 print("     URL: %s" % channels[channel])
                 print()
                 sleep(0.25)
-                youtube_channel_download(channels[channel])
+                video_thread = threading.Thread(target=youtube_channel_download, args=(channels[channel],),
+                                                daemon=True)
+                videos_threads.append(video_thread)
+
+            print(color.red(color.bold("\nStarting threads...\n")))
+            sleep(1)
+            for video_thread in videos_threads:
+                video_thread.start()
+
+            for video_thread in videos_threads:
+                while video_thread.is_alive():
+                    pass
 
             if sort_again:
                 print(color.yellow(color.bold(" Re-applying sorting type...")))
