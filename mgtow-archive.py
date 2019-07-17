@@ -13,7 +13,6 @@
 # TODO: re-make README.md
 
 import json
-import threading
 import signal
 import sys
 import os
