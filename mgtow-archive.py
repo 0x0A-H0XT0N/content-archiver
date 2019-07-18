@@ -13,6 +13,7 @@
 # TODO: re-make README.md
 
 import json
+import threading
 import signal
 import sys
 import os
@@ -195,6 +196,32 @@ class Organizer:
             if os.path.isdir(root_path + directory):
                 downloaded_channels_list.append(root_path + directory)
         return downloaded_channels_list
+
+
+def youtube_hooker(video):
+    """
+    log and check how much videos have been founded on the machine, this is used by every thread/daemon
+    :param video: video being downloaded
+    :return: if more than "X" videos have been founded on the machine, exit the current thread/download
+    """
+
+    if threading.current_thread() not in founded_videos_dict:
+        # check if the current thread have already been logged on the dict,
+        # if not, create a key using the current thread name and gives to it a value 0
+        founded_videos_dict[threading.current_thread()] = 0
+
+    if len(video) <= 4:
+        # check if the video dict properties has more than 4 keys, this happens because when a video is founded, yt-dl
+        # creates only 4 keys to it on the hooker dict
+        founded_videos_dict[threading.current_thread()] += 1
+
+    if founded_videos_dict[threading.current_thread()] >= founded_videos_limit:
+        # if more than or equal than founded_videos_limit, exit the thread
+        # this happens because threads/daemons consumes machine resources and time
+        # if you want to download a full channel but you already have some videos, dont use the channels tab
+        print("\n     " + color.yellow(color.bold("LIMIT OF VIDEOS FOUNDED FOR CURRENT CHANNEL,")) +
+              "\n     " + color.red(color.bold("EXITING THREAD: %s \n" % threading.current_thread())))
+        sys.exit(0)
 
 
 def clear():
