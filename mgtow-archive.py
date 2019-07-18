@@ -400,7 +400,6 @@ def set_sorting_type():
 youtube_config = {      # --------------------CHANGE-THIS!!!--------------------- #
 
     'logger':                   Logger(),           # Logger instance, don't change it!
-
     'format':                   '22/18/mp4/best',   # Video format code. See options.py for more information.
     'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
     'restrictfilenames':        True,               # Do not allow "&" and spaces in file names
@@ -432,9 +431,7 @@ youtube_config = {      # --------------------CHANGE-THIS!!!--------------------
 yt_list_of_channels_config = {      # --------------------CHANGE-THIS!!!--------------------- #
 
     'logger':                   Logger(),           # Logger instance, don't change it!
-
     'download_archive':         get_path() + '/download_archive',
-
     'format':                   '22/18/mp4/best',   # Video format code. See options.py for more information.
     'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
     'restrictfilenames':        True,               # Do not allow "&" and spaces in file names
