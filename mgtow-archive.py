@@ -402,7 +402,7 @@ youtube_config = {      # --------------------CHANGE-THIS!!!--------------------
 
     'logger':                   Logger(),           # Logger instance, don't change it!
 
-    'format':                   'bestaudio/best',   # Video format code. See options.py for more information.
+    'format':                   '22/18/mp4/best',   # Video format code. See options.py for more information.
     'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
     'restrictfilenames':        True,               # Do not allow "&" and spaces in file names
     'no_warnings':              True,               # Do not print out anything for warnings.
@@ -436,7 +436,7 @@ yt_list_of_channels_config = {      # --------------------CHANGE-THIS!!!--------
 
     'download_archive':         get_path() + '/download_archive',
 
-    'format':                   'bestaudio/best',   # Video format code. See options.py for more information.
+    'format':                   '22/18/mp4/best',   # Video format code. See options.py for more information.
     'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
     'restrictfilenames':        True,               # Do not allow "&" and spaces in file names
     'no_warnings':              True,               # Do not print out anything for warnings.
