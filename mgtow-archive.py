@@ -12,6 +12,13 @@
 # TODO: compressing system
 # TODO: move all config files to a single file
 # TODO: re-make README.md
+# TODO: finish sorting stuff, if using sort-by-type:
+#  dont sort to all-in-one if using the download archive, just re-sort to sort-by-type at the end of the download.
+# TODO: set download archive to default for all downloads options and
+#  make a option to disable it for the current download
+# TODO: make a quick option to change between using threads (daemons) or single threads (default)
+# TODO: disable all youtube-hooker stuff
+# TODO: move all "configuration" stuff (sort, path, compress, thread) to one tab (conf)
 
 import json
 import signal
@@ -44,7 +51,7 @@ class Color:
     Return text with color using colorama.
     Pretty much straight forward to read.
     Just use Color().wantedColorOrBold(textToBeColoredOrBolded).
-    reset() reset the last color usage (if you use this class and after it want to
+    reset() reset the last color usage
     """
     RED = colorama.Fore.RED
     YELLOW = colorama.Fore.YELLOW
@@ -195,6 +202,11 @@ class Organizer:
             if os.path.isdir(root_path + directory):
                 downloaded_channels_list.append(root_path + directory)
         return downloaded_channels_list
+
+
+class Compress:
+    # TODO
+    pass
 
 
 def clear():
@@ -421,14 +433,6 @@ youtube_config = {      # --------------------CHANGE-THIS!!!--------------------
     'noplaylist':               False,              # Download single video instead of a playlist if in doubt.
     'playlistrandom':           False,              # Download playlist items in random order.
     'playlistreverse':          False,              # Download playlist items in reverse order.
-    'forceurl':                 False,              # Force printing final URL.
-    'forcetitle':               False,              # Force printing title.
-    'forceid':                  False,              # Force printing ID.
-    'forcethumbnail':           False,              # Force printing thumbnail URL.
-    'forcedescription':         False,              # Force printing description.
-    'forcefilename':            False,              # Force printing final filename.
-    'forceduration':            False,              # Force printing duration.
-    'forcejson':                False,              # Force printing info_dict as JSON.
 }
 
 yt_list_of_channels_config = {      # --------------------CHANGE-THIS!!!--------------------- #
@@ -453,14 +457,6 @@ yt_list_of_channels_config = {      # --------------------CHANGE-THIS!!!--------
     'noplaylist':               False,              # Download single video instead of a playlist if in doubt.
     'playlistrandom':           False,              # Download playlist items in random order.
     'playlistreverse':          False,              # Download playlist items in reverse order.
-    'forceurl':                 False,              # Force printing final URL.
-    'forcetitle':               False,              # Force printing title.
-    'forceid':                  False,              # Force printing ID.
-    'forcethumbnail':           False,              # Force printing thumbnail URL.
-    'forcedescription':         False,              # Force printing description.
-    'forcefilename':            False,              # Force printing final filename.
-    'forceduration':            False,              # Force printing duration.
-    'forcejson':                False,              # Force printing info_dict as JSON.
 }
 
 
@@ -559,7 +555,7 @@ def download_choice():
             if download_another_one not in affirmative_choice:
                 break
             else:
-                video_url = str(input("Type the URL to download.\n" + enter_to_return() + "\n>:"))
+                video_url = str(input("\nType the URL to download.\n" + enter_to_return() + "\n>:"))
                 if video_url == "":
                     clear()
                     break
