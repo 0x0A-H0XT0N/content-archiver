@@ -133,6 +133,8 @@ class Organizer:
             for file in os.listdir(channel):
                 absolute_file_path = channel + "/" + file
                 if os.path.isfile(absolute_file_path):
+                    if fnmatch.fnmatch(file, "*.zip"):
+                        return
                     if fnmatch.fnmatch(file, "*.vtt"):
                         os.rename(absolute_file_path, channel + "/subtitles/" + file)
                     elif fnmatch.fnmatch(file, "*.jpg"):
