@@ -9,6 +9,7 @@
 # TODO: add choose option for format when downloading
 # TODO: add torrent options
 # TODO: add options to edit, remove and download specific channels
+# TODO: compressing system
 # TODO: move all config files to a single file
 # TODO: re-make README.md
 
