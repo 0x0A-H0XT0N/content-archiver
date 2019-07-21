@@ -437,30 +437,6 @@ youtube_config = {      # --------------------CHANGE-THIS!!!--------------------
     'playlistreverse':          False,              # Download playlist items in reverse order.
 }
 
-yt_list_of_channels_config = {      # --------------------CHANGE-THIS!!!--------------------- #
-
-    'logger':                   Logger(),           # Logger instance, don't change it!
-    'download_archive':         get_path() + '/download_archive',
-    'format':                   'mp4[height=720]/mp4[height<720]/mp4',  # Video format code. See yt-dl for more info.
-    'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
-    'restrictfilenames':        True,               # Do not allow "&" and spaces in file names
-    'no_warnings':              True,               # Do not print out anything for warnings.
-    'ignoreerrors':             True,               # Do not stop on download errors.
-    'nooverwrites':             True,               # Prevent overwriting files.
-    'writedescription':         True,               # Write the video description to a .description file
-    'writeinfojson':            True,               # Write metadata to a json file
-    'writethumbnail':           True,               # Write the thumbnail image to a file
-    'writeautomaticsub':        True,               # Write the automatically generated subtitles to a file
-    'writeannotations':         True,               # Write video annotations
-    'verbose':                  False,              # Print additional info to stdout.
-    'quiet':                    False,              # Do not print messages to stdout.
-    'simulate':                 False,              # Do not download the video files.
-    'skip_download':            False,              # Skip the actual download of the video file
-    'noplaylist':               False,              # Download single video instead of a playlist if in doubt.
-    'playlistrandom':           False,              # Download playlist items in random order.
-    'playlistreverse':          False,              # Download playlist items in reverse order.
-}
-
 
 def config_handler():
     """
@@ -521,20 +497,11 @@ def add_channel(channel_name, channel_url):
 
 def youtube_download(url):
     """
-    Download a channel using the normal config
+    Download a channel using the config
     :param url: url of the channel being downloaded
     :return: nothing
     """
     youtube_dl.YoutubeDL(youtube_config).download([url])
-
-
-def youtube_channel_download(url):
-    """
-    Download a channel using the config for channels (calls a progress hooker)
-    :param url: url of the channel being downloaded
-    :return: nothing
-    """
-    youtube_dl.YoutubeDL(yt_list_of_channels_config).download([url])
 
 
 def download_choice():
@@ -669,7 +636,7 @@ def channels_choice():
                 print("     URL: %s" % channels[channel])
                 print()
                 sleep(0.25)
-                youtube_channel_download(channels[channel])
+                youtube_download(channels[channel])
 
             if sort_again:
                 print(color.yellow(color.bold(" Re-applying sorting type...")))
