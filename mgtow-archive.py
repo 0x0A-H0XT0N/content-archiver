@@ -415,8 +415,11 @@ def set_sorting_type():
 youtube_config = {      # --------------------CHANGE-THIS!!!--------------------- #
 
     'logger':                   Logger(),           # Logger instance, don't change it!
+    'download_archive':         get_path() + '/download_archive',   # Use download archive file, don't change it!
+
     'format':                   'mp4[height=720]/mp4[height<720]/mp4',  # Video format code. See yt-dl for more info.
     'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
+
     'restrictfilenames':        True,               # Do not allow "&" and spaces in file names
     'no_warnings':              True,               # Do not print out anything for warnings.
     'ignoreerrors':             True,               # Do not stop on download errors.
@@ -551,7 +554,7 @@ def download_choice():
     else:
         videos_lst.append(video_url)
         while True:
-            download_another_one = input(str("Download another one? [y/N]"))
+            download_another_one = str(input("\nDownload another one? [y/N]"))
             if download_another_one not in affirmative_choice:
                 break
             else:
@@ -561,6 +564,11 @@ def download_choice():
                     break
                 else:
                     videos_lst.append(video_url)
+
+        use_download_archive = str(input("\nUse the download archive file for not repeating downloads? [Y/n]"))
+        if use_download_archive in negative_choice:
+            youtube_config.pop("download_archive", None)
+
     clear()
     print(color.yellow(color.bold("CTRL + C")) +
           " to cancel download.\n")
@@ -723,7 +731,6 @@ if __name__ == "__main__":
     get_config_dir()
     get_path()
     organizer.get_sort_type()
-
     maintainer = True
 
     while maintainer:
