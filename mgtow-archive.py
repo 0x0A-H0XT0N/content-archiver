@@ -16,7 +16,6 @@
 #  dont sort to all-in-one if using the download archive, just re-sort to sort-by-type at the end of the download.
 # TODO: set download archive to default for all downloads options and
 #  make a option to disable it for the current download
-# TODO: make a quick option to change between using threads (daemons) or single threads (default)
 # TODO: disable all youtube-hooker stuff
 # TODO: move all "configuration" stuff (sort, path, compress, thread) to one tab (conf)
 
