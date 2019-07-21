@@ -36,6 +36,8 @@ negative_choice = ["n", "no", "nao", "na", "nop", "nah"]    # negative choices, 
 
 original_stdin_settings = termios.tcgetattr(sys.stdin)
 
+download_archive = True
+
 sorted_folders_names = ["subtitles", "thumbnails", "descriptions", "metadata", "videos", "annotations"]
 
 warnings = 0
@@ -530,6 +532,8 @@ def download_choice():
 
         use_download_archive = str(input("\nUse the download archive file for not repeating downloads? [Y/n]"))
         if use_download_archive in negative_choice:
+            global download_archive
+            download_archive = False
             youtube_config.pop("download_archive", None)
 
     clear()
@@ -537,20 +541,11 @@ def download_choice():
           " to cancel download.\n")
     sleep(0.5)
 
-    sort_again = False
-    if sort_type == "sort_by_type":
-        print("\nSorting by type detected, running back to all in one...\n"
-              "After the download is completed, sorting by type will be re-applied.\n" +
-              color.red(color.bold("DO NOT EXIT THE DOWNLOAD!!!")))
-        organizer.all_in_one(path)
-        sort_again = True
-    sleep(0.5)
-
     for url in videos_lst:
         youtube_download(url)
 
-    if sort_again:
-        print(color.yellow(color.bold(" Re-applying sorting type...")))
+    if sort_type == "sort_by_type":
+        print(color.yellow(color.bold("\n Re-applying sorting type...")))
         organizer.sort_by_type(path)
         print(color.yellow(color.bold(" DONE!")))
 
@@ -615,15 +610,6 @@ def channels_choice():
                   " to cancel download.\n")
             sleep(0.5)
 
-            sort_again = False
-            if sort_type == "sort_by_type":
-                print("\nSorting by type detected, running back to all in one...\n"
-                      "After the download is completed, sorting by type will be re-applied.\n" +
-                      color.red(color.bold("DO NOT EXIT THE DOWNLOAD!!!")))
-                organizer.all_in_one(path)
-                sort_again = True
-            sleep(0.5)
-
             channel_count = 0
             for channel in channels:
                 channel_count += 1
@@ -635,8 +621,8 @@ def channels_choice():
                 sleep(0.25)
                 youtube_download(channels[channel])
 
-            if sort_again:
-                print(color.yellow(color.bold(" Re-applying sorting type...")))
+            if sort_type == "sort_by_type":
+                print(color.yellow(color.bold("Applying sorting type...")))
                 organizer.sort_by_type(path)
                 print(color.yellow(color.bold(" DONE!")))
 
