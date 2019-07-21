@@ -449,6 +449,7 @@ def config_handler():
         print(color.red(color.bold("Changes to the download config must be done on the source code.")))
         print(color.yellow(color.bold("path")) + ") Set download path")
         print(color.yellow(color.bold("sort")) + ") Set sorting type")
+        print(color.yellow(color.bold("compress")) + ") Set compressing configuration")
         print(enter_to_return())
         config_choice = str(input(">:"))  # try to convert choice(str) to choice(int),
         if config_choice == "":
@@ -460,7 +461,7 @@ def config_handler():
             continue
 
         elif config_choice.lower() == "compress":
-            config_handler()
+            # TODO
             continue
 
         elif config_choice.lower() == "sort":
