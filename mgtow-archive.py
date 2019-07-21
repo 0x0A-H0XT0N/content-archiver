@@ -302,12 +302,12 @@ def show_menu():
     print(color.red("   ██║  ██║██║  ██║╚██████╗██║  ██║██║ ╚████╔╝ ███████╗"))
     print(color.red("   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝"))
     print("                 by " + color.red(color.bold("PhoenixK7PB")))
-    print(color.yellow(color.bold("1") + ") Download video/playlist/channel  " +
-                       color.red(color.bold("|" + "  " + color.yellow(color.bold("conf") + ") Configure yt-dl")))))
-    print(color.yellow(color.bold("2") + ") Channels                         " +
-                       color.red(color.bold("|" + "  " + color.yellow(color.bold("path") + ") Set download path")))))
-    print(color.yellow(color.bold("0") + ") Exit                             " +
-                       color.red(color.bold("|" + "  " + color.yellow(color.bold("sort") + ") Set sorting type")))))
+    print(color.yellow(color.bold("1")) + ") Download video/playlist/channel  " +
+                       color.red(color.bold("|")) + "  " + color.yellow(color.bold("conf")) + ") General configuration")
+    print(color.yellow(color.bold("2")) + ") Channels                         " +
+                       color.red(color.bold("|")) + "  ")
+    print(color.yellow(color.bold("0")) + ") Exit                             " +
+                       color.red(color.bold("|")) + "  ")
 
 
 def make_path():
@@ -446,12 +446,30 @@ def config_handler():
     while config_maintainer:
         clear()
         print(color.red(color.bold("-----------------------CONFIGURE-YT-DL----------------------")))
-        print("Youtube-dl version: " + color.yellow(color.bold(youtube_dl.update.__version__)))
-        print()
-        print(color.red(color.bold("All changes to the configuration must be done manually on the code itself.")))
-        print()
-        wait_input()
-        break
+        print(color.red(color.bold("Changes to the download config must be done on the source code.")))
+        print(color.yellow(color.bold("path")) + ") Set download path")
+        print(color.yellow(color.bold("sort")) + ") Set sorting type")
+        print(enter_to_return())
+        config_choice = str(input(">:"))  # try to convert choice(str) to choice(int),
+        if config_choice == "":
+            clear()
+            break
+
+        elif config_choice.lower() == "path":
+            change_path()
+            continue
+
+        elif config_choice.lower() == "compress":
+            config_handler()
+            continue
+
+        elif config_choice.lower() == "sort":
+            set_sorting_type()
+            continue
+
+        else:
+            clear()
+            wait_input()
 
 
 def get_channels():
@@ -694,16 +712,8 @@ if __name__ == "__main__":
             # this is needed because the normal input is a str
 
         except ValueError:  # if the int() parser cant convert, raises a ValueError, this take care if it
-            if choice.lower() == "path":
-                change_path()
-                continue
-
-            elif choice.lower() == "conf":
+            if choice.lower() == "conf":
                 config_handler()
-                continue
-
-            elif choice.lower() == "sort":
-                set_sorting_type()
                 continue
 
             else:   # if user type something that is not an option, ignore and wait for another input
