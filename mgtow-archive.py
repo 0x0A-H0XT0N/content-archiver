@@ -12,8 +12,6 @@
 # TODO: compressing system
 # TODO: move all config files to a single file
 # TODO: re-make README.md
-# TODO: finish sorting stuff, if using sort-by-type:
-#  dont sort to all-in-one if using the download archive, just re-sort to sort-by-type at the end of the download.
 # TODO: move all "configuration" stuff (sort, path, compress, thread) to one tab (conf)
 
 import json
