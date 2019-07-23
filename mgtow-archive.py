@@ -21,6 +21,7 @@ import os
 import tty
 import termios
 import fnmatch
+import tarfile
 
 import youtube_dl
 import colorama
@@ -82,8 +83,9 @@ class Logger(object):
 
     def error(self, msg):
         global errors
+        errors.append(color.red(color.bold(str(msg))))
+
         print(color.red(color.bold(msg)))
-        return errors.append(color.red(color.bold(str(msg))))
 
 
 class Json:
@@ -136,21 +138,23 @@ class Organizer:
             for file in os.listdir(channel):
                 absolute_file_path = channel + "/" + file
                 if os.path.isfile(absolute_file_path):
-                    if fnmatch.fnmatch(file, "*.zip"):
+                    if fnmatch.fnmatch(file, "*.tar.gz"):
                         return
-                    if fnmatch.fnmatch(file, "*.vtt"):
-                        os.rename(absolute_file_path, channel + "/subtitles/" + file)
                     elif fnmatch.fnmatch(file, "*.jpg"):
                         os.rename(absolute_file_path, channel + "/thumbnails/" + file)
                     elif fnmatch.fnmatch(file, "*.description"):
                         os.rename(absolute_file_path, channel + "/descriptions/" + file)
                     elif fnmatch.fnmatch(file, "*.info.json"):
                         os.rename(absolute_file_path, channel + "/metadata/" + file)
+                    elif fnmatch.fnmatch(file, "*.annotations.xml"):
+                        os.rename(absolute_file_path, channel + "/annotations/" + file)
+                    elif fnmatch.fnmatch(file, "*.mp4"):
+                        os.rename(absolute_file_path, channel + "/videos/" + file)
+                    if fnmatch.fnmatch(file, "*.vtt"):
+                        os.rename(absolute_file_path, channel + "/subtitles/" + file)
                     elif fnmatch.fnmatch(file, "*.webm"):
                         os.rename(absolute_file_path, channel + "/videos/" + file)
                     elif fnmatch.fnmatch(file, "*.m4a"):
-                        os.rename(absolute_file_path, channel + "/videos/" + file)
-                    elif fnmatch.fnmatch(file, "*.mp4"):
                         os.rename(absolute_file_path, channel + "/videos/" + file)
                     elif fnmatch.fnmatch(file, "*.mp3"):
                         os.rename(absolute_file_path, channel + "/videos/" + file)
@@ -158,8 +162,6 @@ class Organizer:
                         os.rename(absolute_file_path, channel + "/videos/" + file)
                     elif fnmatch.fnmatch(file, "*.mkv"):
                         os.rename(absolute_file_path, channel + "/videos/" + file)
-                    elif fnmatch.fnmatch(file, "*.annotations.xml"):
-                        os.rename(absolute_file_path, channel + "/annotations/" + file)
                 elif os.path.isdir(absolute_file_path):
                     # handle?
                     pass
@@ -264,24 +266,6 @@ def exit_func():
     sys.exit(0)
 
 
-def make_config_dir():
-    """
-    make the configuration center directory at ~/.config/mgtow-archive
-    :return:
-    """
-    # if not os.path.exists(str(Path.home()) + "/.config/mgtow-archive"):  # check if config dir exists,
-    os.makedirs(str(Path.home()) + "/.config/mgtow-archive/")  # if not, create it
-
-
-def get_config_dir():
-    global config_dir
-    if not os.path.exists(str(Path.home()) + "/.config/mgtow-archive/"):  # check if config dir exists
-        make_config_dir()
-        config_dir = str(Path.home()) + "/.config/mgtow-archive/"
-    else:
-        config_dir = str(Path.home()) + "/.config/mgtow-archive/"
-
-
 def show_menu():
     """
     function that prints the main menu options
@@ -308,6 +292,13 @@ def show_menu():
                        color.red(color.bold("|")) + "  ")
     print(color.yellow(color.bold("0")) + ") Exit                             " +
                        color.red(color.bold("|")) + "  ")
+
+
+def get_config_dir():
+    global config_dir
+    if not os.path.exists(str(Path.home()) + "/.config/mgtow-archive/"):  # check if config dir exists
+        os.makedirs(str(Path.home()) + "/.config/mgtow-archive/")
+    config_dir = str(Path.home()) + "/.config/mgtow-archive/"
 
 
 def make_path():
@@ -348,64 +339,14 @@ def get_path():
     If not data could be found, calls make_path()
     :return: Make a global variable called "path",
     """
-
+    get_config_dir()
     try:    # tries to decode path
         global path
-        get_config_dir()
         path = Json.decode(config_dir + "path.json", return_content=0)
         return path
-
     except FileNotFoundError:   # if the file is not founded, calls make_path() and makes it
         make_path()
         return path
-
-
-def change_path():
-    """
-    option for changing/making new path
-    :return: nothing, just changes path global variable
-    """
-    clear()
-    get_path()
-    print(color.red(color.bold("------------------------CHANGE-PATH-------------------------")))
-    print("Your current path is: " + color.yellow(color.bold(path)))
-    new_path = str(input("\nType your new path...\n" + enter_to_return() +
-                         "\n>:"))
-    if new_path == "":  # check user input, if blank, return
-        clear()
-        return
-
-    else:   # else: check, encode, change global variable path and returns
-        if not os.path.exists(new_path):    # checks if new path exists,
-            os.makedirs(new_path)   # if not, create it,
-        Json.encode(new_path + "/", config_dir + "path.json")  # then encode it
-        get_path()  # change global variable path
-        clear()
-        return
-
-
-def set_sorting_type():
-    clear()
-    organizer.get_sort_type()
-    print(color.red(color.bold("------------------------SORTING-TYPE------------------------")))
-    print(color.red(color.bold("1) All-in-one")) +
-          ": This type of sorting will result in everything\ndownloaded in just one folder, only organized by channels."
-          "\n%s: PATH/channel_name/downloaded_files\n" % color.yellow(color.bold("i.e.")))
-    print(color.red(color.bold("2) Sort-by-type")) +
-          ": This type of sorting will result in 6 folders:\n"
-          "annotations, descriptions, metadata, videos, thumbnails, subtitles."
-          "\n%s: PATH/channel_name/file_type/downloaded_files\n" % color.yellow(color.bold("i.e.")))
-    print("Current sorting: %s" % color.red(color.bold(sort_type)))
-    print(enter_to_return())
-    sorting_choice = str(input("Choose:\n>:"))
-    clear()
-    if sorting_choice == "":
-        return
-    elif sorting_choice.lower() == "1":
-        organizer.all_in_one(path)
-    elif sorting_choice.lower() == "2":
-        organizer.sort_by_type(path)
-    wait_input()
 
 
 youtube_config = {      # --------------------CHANGE-THIS!!!--------------------- #
@@ -435,6 +376,59 @@ youtube_config = {      # --------------------CHANGE-THIS!!!--------------------
 }
 
 
+def change_path():
+    """
+    option for changing/making new path
+    :return: nothing, just changes path global variable
+    """
+    clear()
+    get_path()
+    print(color.red(color.bold("------------------------CHANGE-PATH-------------------------")))
+    print("Your current path is: " + color.yellow(color.bold(path)))
+    new_path = str(input("\nType your new path...\n" + enter_to_return() +
+                         "\n>:"))
+    if new_path == "":  # check user input, if blank, return
+        clear()
+        return
+
+    else:   # else: check, encode, change global variable path and returns
+        if not os.path.exists(new_path):    # checks if new path exists,
+            os.makedirs(new_path)   # if not, create it,
+        Json.encode(new_path + "/", config_dir + "path.json")  # then encode it
+        get_path()  # change global variable path
+        clear()
+        return
+
+
+def set_compress_type():
+    clear()
+    print(color.red(color.bold("----------------------COMPRESSING-TYPE----------------------")))
+
+
+def set_sorting_type():
+    clear()
+    organizer.get_sort_type()
+    print(color.red(color.bold("------------------------SORTING-TYPE------------------------")))
+    print(color.red(color.bold("1) All-in-one")) +
+          ": This type of sorting will result in everything\ndownloaded in just one folder, only organized by channels."
+          "\n%s: PATH/channel_name/downloaded_files\n" % color.yellow(color.bold("i.e.")))
+    print(color.red(color.bold("2) Sort-by-type")) +
+          ": This type of sorting will result in 6 folders:\n"
+          "annotations, descriptions, metadata, videos, thumbnails, subtitles."
+          "\n%s: PATH/channel_name/file_type/downloaded_files\n" % color.yellow(color.bold("i.e.")))
+    print("Current sorting: %s" % color.red(color.bold(sort_type)))
+    print(enter_to_return())
+    sorting_choice = str(input("Choose:\n>:"))
+    clear()
+    if sorting_choice == "":
+        return
+    elif sorting_choice.lower() == "1":
+        organizer.all_in_one(path)
+    elif sorting_choice.lower() == "2":
+        organizer.sort_by_type(path)
+    wait_input()
+
+
 def config_handler():
     """
     this function is used to handle pretty much all configuration process on the program,
@@ -445,11 +439,11 @@ def config_handler():
 
     while config_maintainer:
         clear()
-        print(color.red(color.bold("-----------------------CONFIGURE-YT-DL----------------------")))
+        print(color.red(color.bold("------------------------CONFIGURATION-----------------------")))
         print(color.red(color.bold("Changes to the download config must be done on the source code.")))
         print(color.yellow(color.bold("path")) + ") Set download path")
         print(color.yellow(color.bold("sort")) + ") Set sorting type")
-        print(color.yellow(color.bold("compress")) + ") Set compressing configuration")
+        print(color.yellow(color.bold("comp")) + ") Set compress style")
         print(enter_to_return())
         config_choice = str(input(">:"))  # try to convert choice(str) to choice(int),
         if config_choice == "":
@@ -460,8 +454,8 @@ def config_handler():
             change_path()
             continue
 
-        elif config_choice.lower() == "compress":
-            # TODO
+        elif config_choice.lower() == "comp":
+            set_compress_type()
             continue
 
         elif config_choice.lower() == "sort":
@@ -692,13 +686,15 @@ def channels_choice():
 if __name__ == "__main__":
     colorama.init(autoreset=True)
     signal.signal(signal.SIGINT, signal_handler)
+
     color = Color()
     organizer = Organizer()
+
     get_config_dir()
     get_path()
     organizer.get_sort_type()
-    maintainer = True
 
+    maintainer = True
     while maintainer:
         clear()
         show_menu()  # show menu
