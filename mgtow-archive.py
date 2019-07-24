@@ -168,6 +168,10 @@ class Organizer:
         Json.encode("sort_by_type", config_dir + "sort_type.json")
         self.get_sort_type()
 
+
+    class Torrent:
+        def client_version(self):
+
     def all_in_one(self, root_path):
         for channel in self.get_downloaded_channels(root_path):
             for folder in os.listdir(channel):
@@ -289,6 +293,8 @@ def show_menu():
     print(color.yellow(color.bold("1")) + ") Download video/playlist/channel  " +
                        color.red(color.bold("|")) + "  " + color.yellow(color.bold("conf")) + ") General configuration")
     print(color.yellow(color.bold("2")) + ") Channels                         " +
+                       color.red(color.bold("|")) + "  ")
+    print(color.yellow(color.bold("3")) + ") qBittorrent interface (v4.1+)    " +
                        color.red(color.bold("|")) + "  ")
     print(color.yellow(color.bold("0")) + ") Exit                             " +
                        color.red(color.bold("|")) + "  ")
@@ -633,7 +639,7 @@ def channels_choice():
                 youtube_download(channels[channel])
 
             if sort_type == "sort_by_type":
-                print(color.yellow(color.bold("Applying sorting type...")))
+                print(color.yellow(color.bold("\nApplying sorting type...")))
                 organizer.sort_by_type(path)
                 print(color.yellow(color.bold(" DONE!")))
 
@@ -683,6 +689,11 @@ def channels_choice():
                     break
 
 
+def torrent_choice():
+    print(color.red(color.bold("----------------------TORRENT-INTERFACE---------------------")))
+
+
+
 if __name__ == "__main__":
     colorama.init(autoreset=True)
     signal.signal(signal.SIGINT, signal_handler)
@@ -725,8 +736,9 @@ if __name__ == "__main__":
             channels_choice()
 
         elif choice == 3:
-            pass
-            # TODO start torrent stuff?
+            clear()
+            print("Not implemented, sorry.")
+            wait_input()
         elif choice == 0:
             exit_func()
         else:
