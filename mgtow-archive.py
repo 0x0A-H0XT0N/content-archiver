@@ -22,6 +22,7 @@ import tty
 import termios
 import fnmatch
 import tarfile
+import base64
 
 import youtube_dl
 import colorama
@@ -169,8 +170,10 @@ class Organizer:
         self.get_sort_type()
 
 
-    class Torrent:
-        def client_version(self):
+class Torrent:
+    def client_version(self):
+            pass
+
 
     def all_in_one(self, root_path):
         for channel in self.get_downloaded_channels(root_path):
@@ -689,9 +692,41 @@ def channels_choice():
                     break
 
 
-def torrent_choice():
-    print(color.red(color.bold("----------------------TORRENT-INTERFACE---------------------")))
+def torrent_handler():
+    torrent_maintainer = True
+    while torrent_maintainer:
+        clear()
+        print(color.red(color.bold("----------------------TORRENT-INTERFACE---------------------")))
+        print(color.yellow(color.bold("1")) + ") Change login")
+        print(enter_to_return())
+        torrent_choice = str(input(">:"))
 
+        if torrent_choice == "1":
+            while True:
+                clear()
+                print(color.red(color.bold("------------------------CHANGE-LOGIN------------------------")))
+                print(color.yellow(color.bold("1")) + ") IP:    localhost") # TODO
+                print(color.yellow(color.bold("2")) + ") Port:  8080") # TODO
+                print(enter_to_return())
+                change_login_choice = str(input(">:"))
+
+                if change_login_choice == "1":
+                    pass # TODO
+                elif change_login_choice == "2":
+                    pass # TODO
+
+                elif change_login_choice == "":
+                    break
+                else:
+                    clear()
+                    wait_input()
+
+        elif torrent_choice == "":
+            break
+        else:
+            clear()
+            print("cu")
+            wait_input()
 
 
 if __name__ == "__main__":
@@ -736,9 +771,8 @@ if __name__ == "__main__":
             channels_choice()
 
         elif choice == 3:
-            clear()
-            print("Not implemented, sorry.")
-            wait_input()
+            torrent_handler()
+
         elif choice == 0:
             exit_func()
         else:
