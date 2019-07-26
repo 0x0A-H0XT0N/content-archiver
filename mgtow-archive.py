@@ -69,20 +69,24 @@ class Color:
     def bold(self, text):
         return self.BOLD + text + self.END
 
-    def reset(self):
+    @staticmethod
+    def reset():
         return colorama.Style.RESET_ALL
 
 
 class Logger(object):
 
-    def debug(self, msg):
+    @staticmethod
+    def debug(msg):
         print(msg)
 
-    def warning(self, msg):
+    @staticmethod
+    def warning(msg):
         global warnings
         warnings += 1
 
-    def error(self, msg):
+    @staticmethod
+    def error(msg):
         global errors
         errors.append(color.red(color.bold(str(msg))))
 
@@ -94,6 +98,7 @@ class Json:
     Handle JSON requests.
     """
 
+    @staticmethod
     def encode(data, write_filename):
         """
         Encode a obj (if available) to a file
@@ -106,6 +111,7 @@ class Json:
         with open(write_filename, "w") as write_file:
             json.dump(data, write_file)
 
+    @staticmethod
     def decode(read_filename, return_content=1):
         """
         Read a .json file and transfer the data to a global variable
@@ -169,12 +175,6 @@ class Organizer:
         Json.encode("sort_by_type", config_dir + "sort_type.json")
         self.get_sort_type()
 
-
-class Torrent:
-    def client_version(self):
-            pass
-
-
     def all_in_one(self, root_path):
         for channel in self.get_downloaded_channels(root_path):
             for folder in os.listdir(channel):
@@ -186,7 +186,8 @@ class Torrent:
         Json.encode("all_in_one", config_dir + "sort_type.json")
         self.get_sort_type()
 
-    def remove_folder_sorted_directories(self, channel_path):
+    @classmethod
+    def remove_folder_sorted_directories(cls, channel_path):
         for folder in os.listdir(channel_path):
             absolute_folder_path = channel_path + "/" + folder
             if os.path.isdir(absolute_folder_path):
@@ -196,12 +197,14 @@ class Torrent:
                     print(color.red(color.bold("\n    ERROR AT '%s':\n"
                                                "    DIRECTORY NOT EMPTY, NOT REMOVING IT!\n") % absolute_folder_path))
 
-    def make_folder_sorted_directories(self, channel_path):
+    @classmethod
+    def make_folder_sorted_directories(cls, channel_path):
         for folder_name in sorted_folders_names:
             if not os.path.exists(channel_path + "/" + folder_name):
                 os.makedirs(channel_path + "/" + folder_name)
 
-    def get_downloaded_channels(self, root_path):
+    @classmethod
+    def get_downloaded_channels(cls, root_path):
         downloaded_channels_list = []
         for directory in os.listdir(os.path.abspath(root_path)):
             if os.path.isdir(root_path + directory):
@@ -212,6 +215,51 @@ class Torrent:
 class Compress:
     # TODO
     pass
+
+
+class Format:
+    def __init__(self):
+        self.format_file = config_dir + "format.json"
+        self.formats = {
+            "mp4":              "mp4[height=720]/mp4[height<720]/mp4",
+            "mp3":              "mp3",
+            "bestaudio":        "bestaudio",
+            "best":             "best",
+        }
+
+    def get_format(self, raw=False):
+        if raw:
+            try:
+                return Json.decode(self.format_file, return_content=0)
+            except FileNotFoundError:
+                self.default_format()
+        elif not raw:
+            try:
+                current_format = Json.decode(self.format_file, return_content=0)
+                return list(self.formats.keys())[list(self.formats.values()).index(current_format)]
+            except FileNotFoundError:
+                self.default_format()
+
+    def default_format(self):
+        Json.encode("mp4[height=720]/mp4[height<720]/mp4", self.format_file)
+        self.get_format()
+
+    def mp4(self):
+        Json.encode(self.formats["mp4"], self.format_file)
+
+    def mp3(self):
+        Json.encode(self.formats["mp3"], self.format_file)
+
+    def bestaudio(self):
+        Json.encode(self.formats["bestaudio"], self.format_file)
+
+    def best(self):
+        Json.encode(self.formats["best"], self.format_file)
+
+
+class Torrent:
+    def client_version(self):
+        pass
 
 
 def clear():
@@ -363,7 +411,7 @@ youtube_config = {      # --------------------CHANGE-THIS!!!--------------------
     'logger':                   Logger(),           # Logger instance, don't change it!
     'download_archive':         get_path() + '/download_archive',   # Use download archive file, don't change it!
 
-    'format':                   'mp4[height=720]/mp4[height<720]/mp4',  # Video format code. See yt-dl for more info.
+    'format':                   Format().get_format(raw=True),  # Video format code. See yt-dl for more info.
     'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
 
     'restrictfilenames':        True,               # Do not allow "&" and spaces in file names
@@ -385,7 +433,7 @@ youtube_config = {      # --------------------CHANGE-THIS!!!--------------------
 }
 
 
-def change_path():
+def set_path():
     """
     option for changing/making new path
     :return: nothing, just changes path global variable
@@ -438,6 +486,57 @@ def set_sorting_type():
     wait_input()
 
 
+def set_format():
+    while True:
+        clear()
+        print(color.red(color.bold("-----------------------DOWNLOAD-FORMAT----------------------")))
+        current_format = download_format.get_format()
+
+        if current_format == "mp4":
+            print(color.yellow(color.bold("1)")) + "    (" + color.red(color.bold("X")) + ") MP4")
+        else:
+            print(color.yellow(color.bold("1)")) + "    ( ) MP4")
+
+        if current_format == "mp3":
+            print(color.yellow(color.bold("2)")) + "    (" + color.red(color.bold("X")) + ") MP3")
+        else:
+            print(color.yellow(color.bold("2)")) + "    ( ) MP3")
+
+        if current_format == "bestaudio":
+            print(color.yellow(color.bold("3)")) + "    (" +
+                  color.red(color.bold("X")) + ") Best audio only format avaliable")
+        else:
+            print(color.yellow(color.bold("3)")) +
+                  "    ( ) Best audio only format avaliable")
+
+        if current_format == "best":
+            print(color.yellow(color.bold("4)")) + "    (" +
+                  color.red(color.bold("X")) + ") Best format avaliable")
+        else:
+            print(color.yellow(color.bold("4)")) +
+                  "    ( ) Best format avaliable")
+
+        print(enter_to_return())
+        format_choice = str(input(">:"))
+
+        if format_choice.lower() == "":
+            break
+        elif format_choice.lower() == "1":
+            download_format.mp4()
+            download_format.get_format()
+        elif format_choice.lower() == "2":
+            download_format.mp3()
+            download_format.get_format()
+        elif format_choice.lower() == "3":
+            download_format.bestaudio()
+            download_format.get_format()
+        elif format_choice.lower() == "4":
+            download_format.best()
+            download_format.get_format()
+        else:
+            clear()
+            wait_input()
+
 def config_handler():
     """
     this function is used to handle pretty much all configuration process on the program,
@@ -450,9 +549,16 @@ def config_handler():
         clear()
         print(color.red(color.bold("------------------------CONFIGURATION-----------------------")))
         print(color.red(color.bold("Changes to the download config must be done on the source code.")))
-        print(color.yellow(color.bold("path")) + ") Set download path")
-        print(color.yellow(color.bold("sort")) + ") Set sorting type")
-        print(color.yellow(color.bold("comp")) + ") Set compress style")
+        print(color.yellow(color.bold("compress")) + ") Set compress style      " + color.red(color.bold("|")) +
+              "  " + color.yellow(color.bold("NONE")))
+
+        print(color.yellow(color.bold("  format")) + ") Set download format     " + color.red(color.bold("|")) +
+              "  " + color.yellow(color.bold(download_format.get_format())))
+
+        print(color.yellow(color.bold("    path")) + ") Set download path       " + color.red(color.bold("|")) +
+              "  " + color.yellow(color.bold(path)))
+        print(color.yellow(color.bold("    sort")) + ") Set sorting type        " + color.red(color.bold("|")) +
+              "  " + color.yellow(color.bold(sort_type)))
         print(enter_to_return())
         config_choice = str(input(">:"))  # try to convert choice(str) to choice(int),
         if config_choice == "":
@@ -460,15 +566,19 @@ def config_handler():
             break
 
         elif config_choice.lower() == "path":
-            change_path()
+            set_path()
             continue
 
-        elif config_choice.lower() == "comp":
+        elif config_choice.lower() == "compress":
             set_compress_type()
             continue
 
         elif config_choice.lower() == "sort":
             set_sorting_type()
+            continue
+
+        elif config_choice.lower() == "format":
+            set_format()
             continue
 
         else:
@@ -733,8 +843,12 @@ if __name__ == "__main__":
     colorama.init(autoreset=True)
     signal.signal(signal.SIGINT, signal_handler)
 
+    # init instances
     color = Color()
     organizer = Organizer()
+    download_format = Format()
+    torrent = Torrent()
+    compress = Compress()
 
     get_config_dir()
     get_path()
