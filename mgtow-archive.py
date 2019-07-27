@@ -24,6 +24,7 @@ import base64
 
 import youtube_dl
 import colorama
+import qbittorrentapi
 
 from pathlib import Path
 from time import sleep
@@ -52,6 +53,7 @@ class Color:
     RED = colorama.Fore.RED
     YELLOW = colorama.Fore.YELLOW
     BLUE = colorama.Fore.BLUE
+    GREEN = colorama.Fore.GREEN
     BOLD = '\033[1m'
     END = '\033[0m'
 
@@ -63,6 +65,9 @@ class Color:
 
     def blue(self, text):
         return self.BLUE + text
+
+    def green(self, text):
+        return self.GREEN + text
 
     def bold(self, text):
         return self.BOLD + text + self.END
@@ -110,7 +115,7 @@ class Json:
             json.dump(data, write_file)
 
     @staticmethod
-    def decode(read_filename, return_content=1):
+    def decode(read_filename, return_content=False):
         """
         Read a .json file and transfer the data to a global variable
         :param read_filename: Name of the file to be read, NEED the .json at the end
@@ -125,7 +130,7 @@ class Json:
         with open(read_filename) as json_data:
             json_decode = json.load(json_data)
 
-            if return_content == 0:
+            if return_content:
                 return json_decode
 
 
@@ -133,7 +138,7 @@ class Organizer:
     def get_sort_type(self):
         try:
             global sort_type
-            sort_type = Json.decode(config_dir + "sort_type.json", return_content=0)
+            sort_type = Json.decode(config_dir + "sort_type.json", return_content=True)
         except FileNotFoundError:
             self.all_in_one(path)
 
@@ -217,7 +222,7 @@ class Compress:
 
 class Format:
     def __init__(self):
-        self.format_file = config_dir + "format.json"
+        self.format_config = config_dir + "format_config.json"
         self.formats = {
             "mp4":              "mp4[height=720]/mp4[height<720]/mp4",
             "mp3":              "mp3",
@@ -228,36 +233,81 @@ class Format:
     def get_format(self, raw=False):
         if raw:
             try:
-                return Json.decode(self.format_file, return_content=0)
+                return Json.decode(self.format_config, return_content=True)
             except FileNotFoundError:
                 self.default_format()
         elif not raw:
             try:
-                current_format = Json.decode(self.format_file, return_content=0)
+                current_format = Json.decode(self.format_config, return_content=True)
                 return list(self.formats.keys())[list(self.formats.values()).index(current_format)]
             except FileNotFoundError:
                 self.default_format()
 
     def default_format(self):
-        Json.encode("mp4[height=720]/mp4[height<720]/mp4", self.format_file)
+        Json.encode("mp4[height=720]/mp4[height<720]/mp4", self.format_config)
         self.get_format()
 
     def mp4(self):
-        Json.encode(self.formats["mp4"], self.format_file)
+        Json.encode(self.formats["mp4"], self.format_config)
 
     def mp3(self):
-        Json.encode(self.formats["mp3"], self.format_file)
+        Json.encode(self.formats["mp3"], self.format_config)
 
     def bestaudio(self):
-        Json.encode(self.formats["bestaudio"], self.format_file)
+        Json.encode(self.formats["bestaudio"], self.format_config)
 
     def best(self):
-        Json.encode(self.formats["best"], self.format_file)
+        Json.encode(self.formats["best"], self.format_config)
 
 
 class Torrent:
+    def __init__(self):
+        self.torrent_config_path = config_dir + "torrent_config.json"
+        self.torrent_config_file = self.get_config()
+        self.client_instance = self.get_client_instance()
+
+    def make_default_config(self):
+        default_config = {
+            "ip": "localhost",
+            "port": "8080",
+            "username": "",
+            "password": "",
+        }
+        Json.encode(default_config, self.torrent_config_path)
+        self.get_config()
+
+    def get_config(self):
+        try:
+            return Json.decode(self.torrent_config_path, return_content=True)
+        except FileNotFoundError:
+            self.make_default_config()
+
+    def update_config(self, new_config_file):
+        return Json.encode(new_config_file, self.torrent_config_path)
+
+    def get_client_instance(self):
+        host = self.torrent_config_file["ip"] + ":" + self.torrent_config_file["port"]
+        username = self.torrent_config_file["username"]
+        password = self.torrent_config_file["password"]
+        return qbittorrentapi.Client(host=host, username=username, password=password)
+
+    def client_auth_log_in(self):
+        """
+        Check login credentials
+        :return: If login successful returns True, If login failed returns False
+        """
+        try:
+            self.client_instance.auth_log_in(username=self.torrent_config_file["username"],
+                                             password=self.torrent_config_file["password"])
+            return True
+        except qbittorrentapi.LoginFailed:
+            return False
+        except qbittorrentapi.Forbidden403Error:
+            return False
+
+
     def client_version(self):
-        pass
+        return self.client_instance.app_version()
 
 
 def clear():
@@ -383,7 +433,7 @@ def make_path():
         Json.encode(path_name + "/", config_dir + "path.json")     # encode JSON file containing the user path
 
     global path
-    path = Json.decode(config_dir + "path.json", return_content=0)   # make a global variable containing the new path
+    path = Json.decode(config_dir + "path.json", return_content=True)   # make a global variable containing the new path
     clear()
 
 
@@ -397,7 +447,7 @@ def get_path():
     get_config_dir()
     try:    # tries to decode path
         global path
-        path = Json.decode(config_dir + "path.json", return_content=0)
+        path = Json.decode(config_dir + "path.json", return_content=True)
         return path
     except FileNotFoundError:   # if the file is not founded, calls make_path() and makes it
         make_path()
@@ -592,7 +642,7 @@ def get_channels():
     """
     try:
         global channels
-        channels = Json.decode(config_dir + "channels.json", return_content=0)
+        channels = Json.decode(config_dir + "channels.json", return_content=True)
 
     except FileNotFoundError:
         clear()
@@ -611,7 +661,7 @@ def add_channel(channel_name, channel_url):
     :return:  calls get_channels()
     """
     try:
-        old_channels = Json.decode(config_dir + "channels.json", return_content=0)
+        old_channels = Json.decode(config_dir + "channels.json", return_content=True)
         old_channels[channel_name] = channel_url
         Json.encode(old_channels, config_dir + "channels.json")
         get_channels()
@@ -805,23 +855,107 @@ def torrent_handler():
     while torrent_maintainer:
         clear()
         print(color.red(color.bold("----------------------TORRENT-INTERFACE---------------------")))
-        print(color.yellow(color.bold("1")) + ") Change login")
+        if torrent.client_auth_log_in():
+            print("Login status: %s"
+                  % color.green(color.bold("Successful")))
+        else:
+            print("Login status: %s  |  Enable bypass for clientes on the localhost."
+                  % color.red(color.bold("Failed")))
+        print()
+        print(color.yellow(color.bold("1")) + ") Change login                     " +
+              color.red(color.bold("|")) + "  %s:%s"
+              % (torrent.get_config()["ip"], torrent.get_config()["port"]))
         print(enter_to_return())
         torrent_choice = str(input(">:"))
 
         if torrent_choice == "1":
+            clear()
+            print(color.red(color.bold("BE CAREFUL WHEN CHANGING THE LOGIN IP AND PORT!"
+                                       "\nANY MISLEADING CHANGES COULD BE CATASTROPHIC!"
+                                       "\nRemove the file '~/.config/mgtow-archive/torrent_config.json' "
+                                       "if any errors occur.")))
+            wait_input()
             while True:
                 clear()
                 print(color.red(color.bold("------------------------CHANGE-LOGIN------------------------")))
-                print(color.yellow(color.bold("1")) + ") IP:    localhost") # TODO
-                print(color.yellow(color.bold("2")) + ") Port:  8080") # TODO
+                if torrent.client_auth_log_in():
+                    print("Login status: %s" % color.green(color.bold("Successful")))
+                else:
+                    print("Login status: %s" % color.red(color.bold("Failed")))
+                print()
+                print(color.yellow(color.bold("1")) + ") IP:        %s" % torrent.get_config()["ip"])
+                print(color.yellow(color.bold("2")) + ") Port:      %s" % torrent.get_config()["port"])
+                print(color.yellow(color.bold("3")) + ") Username:  %s" % torrent.get_config()["username"])
+                print(color.yellow(color.bold("4")) + ") Password:  %s" % torrent.get_config()["password"])
+                print(color.yellow(color.bold("0")) + ") Reset login to default")
                 print(enter_to_return())
                 change_login_choice = str(input(">:"))
 
                 if change_login_choice == "1":
-                    pass # TODO
+                    clear()
+                    print(color.red(color.bold("--------------------------CHANGE-IP-------------------------")))
+                    print(color.yellow(color.bold("Leave everything blank to cancel.\n")))
+                    print("Current IP: %s" % torrent.get_config()["ip"])
+                    print("\nEnter the new IP to the used.")
+                    new_ip = str(input(">:"))
+                    if new_ip == "":
+                        return
+                    else:
+                        new_config = torrent.get_config()
+                        new_config["ip"] = new_ip
+                        torrent.update_config(new_config)
+
                 elif change_login_choice == "2":
-                    pass # TODO
+                    clear()
+                    print(color.red(color.bold("-------------------------CHANGE-PORT------------------------")))
+                    print(color.yellow(color.bold("Leave everything blank to cancel.\n")))
+                    print("Current port: %s" % torrent.get_config()["port"])
+                    print("\nEnter the new port to the used.")
+                    new_port = str(input(">:"))
+                    if new_port == "":
+                        return
+                    else:
+                        new_config = torrent.get_config()
+                        new_config["port"] = new_port
+                        torrent.update_config(new_config)
+
+                elif change_login_choice == "3":
+                    clear()
+                    print(color.red(color.bold("-----------------------CHANGE-USERNAME----------------------")))
+                    print(color.yellow(color.bold("Leave everything blank to cancel.\n")))
+                    print("Current username: %s" % torrent.get_config()["username"])
+                    print("\nEnter the new username to the used.")
+                    new_username = str(input(">:"))
+                    if new_username == "":
+                        return
+                    else:
+                        new_config = torrent.get_config()
+                        new_config["username"] = new_username
+                        torrent.update_config(new_config)
+
+                elif change_login_choice == "4":
+                    clear()
+                    print(color.red(color.bold("-----------------------CHANGE-PASSWORD----------------------")))
+                    print(color.yellow(color.bold("Leave everything blank to cancel.\n")))
+                    print("Current password: %s" % torrent.get_config()["password"])
+                    print("\nEnter the new password to the used.")
+                    new_password = str(input(">:"))
+                    if new_password == "":
+                        return
+                    else:
+                        new_config = torrent.get_config()
+                        new_config["password"] = new_password
+                        torrent.update_config(new_config)
+
+                elif change_login_choice == "0":
+                    clear()
+                    print(color.red(color.bold("--------------------RESET-TORRENT-CONFIG--------------------")))
+                    torrent_reset_config_choice = str(input("This will undo all changes to the torrent configuration. "
+                                                            "Proceed? [y/N]"))
+                    if torrent_reset_config_choice in affirmative_choice:
+                        torrent.make_default_config()
+                    else:
+                        return
 
                 elif change_login_choice == "":
                     break
@@ -833,7 +967,6 @@ def torrent_handler():
             break
         else:
             clear()
-            print("cu")
             wait_input()
 
 
