@@ -11,7 +11,6 @@
 # TODO: compressing system
 # TODO: move all config files to a single file
 # TODO: re-make README.md
-# TODO: move all "configuration" stuff (sort, path, compress, thread) to one tab (conf)
 
 import json
 import signal
