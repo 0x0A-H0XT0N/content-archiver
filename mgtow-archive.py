@@ -6,7 +6,6 @@
 #  ╚═╝     ╚═╝ ╚═════╝   ╚═╝    ╚═════╝  ╚══╝╚══╝     ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝
 # https://github.com/PhoenixK7PB/mgtow-archive
 #
-# TODO: add choose option for format when downloading
 # TODO: add torrent options
 # TODO: add options to edit, remove and download specific channels
 # TODO: compressing system
