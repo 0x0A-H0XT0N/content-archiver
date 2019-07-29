@@ -300,11 +300,12 @@ class Torrent:
             self.client_instance.auth_log_in(username=self.torrent_config_file["username"],
                                              password=self.torrent_config_file["password"])
             return True
+        except qbittorrentapi.APIConnectionError:
+            return False
         except qbittorrentapi.LoginFailed:
             return False
         except qbittorrentapi.Forbidden403Error:
             return False
-
 
     def client_version(self):
         return self.client_instance.app_version()
@@ -857,9 +858,9 @@ def torrent_handler():
         print(color.red(color.bold("----------------------TORRENT-INTERFACE---------------------")))
         if torrent.client_auth_log_in():
             print("Login status: %s"
-                  % color.green(color.bold("Successful")))
+                  % color.green(color.bold("Successful  |  Client Version: %s" % torrent.client_version())))
         else:
-            print("Login status: %s  |  Enable bypass for clientes on the localhost."
+            print("Login status: %s  |  Enable bypass for clients on the localhost."
                   % color.red(color.bold("Failed")))
         print()
         print(color.yellow(color.bold("1")) + ") Change login                     " +
@@ -879,7 +880,8 @@ def torrent_handler():
                 clear()
                 print(color.red(color.bold("------------------------CHANGE-LOGIN------------------------")))
                 if torrent.client_auth_log_in():
-                    print("Login status: %s" % color.green(color.bold("Successful")))
+                    print("Login status: %s" % color.green(color.bold("Successful  |  Client Version: %s"
+                                                                      % torrent.client_version())))
                 else:
                     print("Login status: %s" % color.red(color.bold("Failed")))
                 print()
