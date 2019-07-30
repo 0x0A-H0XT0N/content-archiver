@@ -11,6 +11,10 @@
 # TODO: compressing system
 # TODO: move all config files to a single file
 # TODO: re-make README.md
+# TODO: maked interface for choosing chunk size, download/upload limit,
+#  tracker to be added on the torrent, automatically add torrents when a channel is fully downloaded, etc.
+# TODO: make a read.me on the channel directory before starting the torrent,
+#  the content should have the project name, date, etc
 
 import json
 import signal
@@ -19,15 +23,16 @@ import os
 import tty
 import termios
 import fnmatch
-import tarfile
+# import tarfile
 import base64
 
 import youtube_dl
 import colorama
 import qbittorrentapi
+from dottorrent import Torrent
 
 from pathlib import Path
-from time import sleep
+from time import sleep, process_time
 
 
 affirmative_choice = ["y", "yes", "s", "sim", "yeah", "yah", "ya"]  # affirmative choices, used on user interaction
@@ -41,6 +46,51 @@ sorted_folders_names = ["subtitles", "thumbnails", "descriptions", "metadata", "
 
 warnings = 0
 errors = []
+
+trackers_list = [
+            "udp://tracker4.itzmx.com:2710/announce",
+            "udp://tracker2.itzmx.com:6961/announce",
+            "https://t.quic.ws:443/announce",
+            "https://tracker.fastdownload.xyz:443/announce",
+            "http://torrent.nwps.ws:80/announce",
+            "udp://explodie.org:6969/announce",
+            "http://tracker2.itzmx.com:6961/announce",
+            "https://tracker.gbitt.info:443/announce",
+            "http://tracker4.itzmx.com:2710/announce",
+            "udp://tracker.trackton.ga:7070/announce",
+            "udp://tracker.tvunderground.org.ru:3218/announce",
+            "http://explodie.org:6969/announce",
+            "http://open.trackerlist.xyz:80/announce",
+            "udp://retracker.baikal-telecom.net:2710/announce",
+            "http://open.acgnxtracker.com:80/announce",
+            "udp://tracker.swateam.org.uk:2710/announce",
+            "udp://tracker.iamhansen.xyz:2000/announce",
+            "http://tracker.gbitt.info:80/announce",
+            "udp://retracker.lanta-net.ru:2710/announce",
+            "http://tracker.tvunderground.org.ru:3218/announce",
+            "udp://retracker.netbynet.ru:2710/announce",
+            "udp://tracker.supertracker.net:1337/announce",
+            "udp://ipv4.tracker.harry.lu:80/announce",
+            "udp://tracker.uw0.xyz:6969/announce",
+            "udp://zephir.monocul.us:6969/announce",
+            "udp://tracker.moeking.me:6969",
+            "udp://tracker.filemail.com:6969/announce",
+            "udp://tracker.filepit.to:6969/announce",
+            "wss://tracker.openwebtorrent.com:443/announce",
+            "http://gwp2-v19.rinet.ru:80/announce",
+            "http://vps02.net.orel.ru:80/announce",
+            "http://tracker.port443.xyz:6969/announce",
+            "http://mail2.zelenaya.net:80/announce",
+            "http://open.acgtracker.com:1096/announce",
+            "http://tracker.vivancos.eu/announce",
+            "udp://carapax.net:6969/announce",
+            "udp://tracker.novg.net:6969/announce",
+            "http://tracker.novg.net:6969/announce",
+            "http://carapax.net:6969/announce",
+            "udp://torrentclub.tech:6969/announce",
+            "udp://home.penza.com.ru:6969/announce",
+            "udp://tracker.dyn.im:6969/announce",
+        ]
 
 
 class Color:
@@ -137,10 +187,10 @@ class Json:
 class Organizer:
     def get_sort_type(self):
         try:
-            global sort_type
-            sort_type = Json.decode(config_dir + "sort_type.json", return_content=True)
+            return Json.decode(config_dir + "sort_type.json", return_content=True)
         except FileNotFoundError:
-            self.all_in_one(path)
+            self.sort_by_type(download_path)
+            return Json.decode(config_dir + "sort_type.json", return_content=True)
 
     def sort_by_type(self, root_path):
         for channel in self.get_downloaded_channels(root_path):
@@ -149,7 +199,7 @@ class Organizer:
                 absolute_file_path = channel + "/" + file
                 if os.path.isfile(absolute_file_path):
                     if fnmatch.fnmatch(file, "*.tar.gz"):
-                        return
+                        pass
                     elif fnmatch.fnmatch(file, "*.jpg"):
                         os.rename(absolute_file_path, channel + "/thumbnails/" + file)
                     elif fnmatch.fnmatch(file, "*.description"):
@@ -172,11 +222,12 @@ class Organizer:
                         os.rename(absolute_file_path, channel + "/videos/" + file)
                     elif fnmatch.fnmatch(file, "*.mkv"):
                         os.rename(absolute_file_path, channel + "/videos/" + file)
+                    elif fnmatch.fnmatch(file, "*.torrent"):
+                        pass
                 elif os.path.isdir(absolute_file_path):
                     # handle?
                     pass
         Json.encode("sort_by_type", config_dir + "sort_type.json")
-        self.get_sort_type()
 
     def all_in_one(self, root_path):
         for channel in self.get_downloaded_channels(root_path):
@@ -187,10 +238,9 @@ class Organizer:
                         os.rename(absolute_folder_path + "/" + file, channel + "/" + file)
             self.remove_folder_sorted_directories(channel + "/")
         Json.encode("all_in_one", config_dir + "sort_type.json")
-        self.get_sort_type()
 
-    @classmethod
-    def remove_folder_sorted_directories(cls, channel_path):
+    @staticmethod
+    def remove_folder_sorted_directories(channel_path):
         for folder in os.listdir(channel_path):
             absolute_folder_path = channel_path + "/" + folder
             if os.path.isdir(absolute_folder_path):
@@ -200,14 +250,14 @@ class Organizer:
                     print(color.red(color.bold("\n    ERROR AT '%s':\n"
                                                "    DIRECTORY NOT EMPTY, NOT REMOVING IT!\n") % absolute_folder_path))
 
-    @classmethod
-    def make_folder_sorted_directories(cls, channel_path):
+    @staticmethod
+    def make_folder_sorted_directories(channel_path):
         for folder_name in sorted_folders_names:
             if not os.path.exists(channel_path + "/" + folder_name):
                 os.makedirs(channel_path + "/" + folder_name)
 
-    @classmethod
-    def get_downloaded_channels(cls, root_path):
+    @staticmethod
+    def get_downloaded_channels(root_path):
         downloaded_channels_list = []
         for directory in os.listdir(os.path.abspath(root_path)):
             if os.path.isdir(root_path + directory):
@@ -260,7 +310,39 @@ class Format:
         Json.encode(self.formats["best"], self.format_config)
 
 
-class Torrent:
+class Base64:
+    @staticmethod
+    def encode64(password):
+        if isinstance(password, str):
+            return base64.b64encode(password.encode()).decode()
+        else:
+            return base64.b64encode(str(password).encode()).decode()
+
+    @staticmethod
+    def decode64(password):
+        if isinstance(password, str):
+            return base64.b64decode(password.encode()).decode()
+        else:
+            return base64.b64decode(str(password).encode()).decode()
+
+
+class CreateTorrent:
+    def __init__(self):
+        self.source_str = "mgtow-archive"
+        self.comment_str = "Videos downloaded using mgtow-archive, github project page: " \
+                           "https://github.com/PhoenixK7PB/mgtow-archive"
+        self.created_by_str = "https://github.com/PhoenixK7PB/mgtow-archive"
+        self.exclude = [".torrent"]
+
+    def make(self, path, trackers, save_torrent_path, piece_size=None):
+        torrent = Torrent(path=path, trackers=trackers, piece_size=piece_size, exclude=self.exclude,
+                          source=self.source_str, comment=self.comment_str, created_by=self.created_by_str)
+        torrent.generate()
+        with open(save_torrent_path, 'wb') as file:
+            torrent.save(file)
+
+
+class Qbittorrent:
     def __init__(self):
         self.torrent_config_path = config_dir + "torrent_config.json"
         self.torrent_config_file = self.get_config()
@@ -288,7 +370,7 @@ class Torrent:
     def get_client_instance(self):
         host = self.torrent_config_file["ip"] + ":" + self.torrent_config_file["port"]
         username = self.torrent_config_file["username"]
-        password = self.torrent_config_file["password"]
+        password = Base64.decode64(self.torrent_config_file["password"])
         return qbittorrentapi.Client(host=host, username=username, password=password)
 
     def client_auth_log_in(self):
@@ -298,7 +380,7 @@ class Torrent:
         """
         try:
             self.client_instance.auth_log_in(username=self.torrent_config_file["username"],
-                                             password=self.torrent_config_file["password"])
+                                             password=Base64.decode64(self.torrent_config_file["password"]))
             return True
         except qbittorrentapi.APIConnectionError:
             return False
@@ -309,6 +391,13 @@ class Torrent:
 
     def client_version(self):
         return self.client_instance.app_version()
+
+    def list_mgtow_torrents(self):
+        return self.client_instance.torrents_info(status_filter="all", category="mgtow-archive")
+
+    def add_mgtow_torrent(self, torrent_file=None):
+        return self.client_instance.torrents_add(torrent_files=torrent_file, category="mgtow-archive",
+                                                 save_path=download_path)
 
 
 def clear():
@@ -407,6 +496,20 @@ def get_config_dir():
     config_dir = str(Path.home()) + "/.config/mgtow-archive/"
 
 
+def get_channel_size(channel_path):
+    channel_size = 0
+
+    # use the walk() method to navigate through directory tree
+    for dirpath, dirnames, filenames in os.walk(channel_path):
+        for i in filenames:
+            # use join to concatenate all the components of path
+            f = os.path.join(dirpath, i)
+
+            # use getsize to generate size in bytes and add it to the total size
+            channel_size += os.path.getsize(f)
+    return channel_size
+
+
 def make_path():
     """
     create a JSON file on the program directory containing the path for downloaded videos,
@@ -433,9 +536,11 @@ def make_path():
             os.makedirs(path_name)  # if not, create it
         Json.encode(path_name + "/", config_dir + "path.json")     # encode JSON file containing the user path
 
-    global path
-    path = Json.decode(config_dir + "path.json", return_content=True)   # make a global variable containing the new path
+    global download_path
+    download_path = Json.decode(config_dir + "path.json", return_content=True)   # make a global variable containing the new path
     clear()
+    print("The application need to be restarted for the changes take effect. Exiting.")
+    sys.exit(0)
 
 
 def get_path():
@@ -447,12 +552,12 @@ def get_path():
     """
     get_config_dir()
     try:    # tries to decode path
-        global path
-        path = Json.decode(config_dir + "path.json", return_content=True)
-        return path
+        global download_path
+        download_path = Json.decode(config_dir + "path.json", return_content=True)
+        return download_path
     except FileNotFoundError:   # if the file is not founded, calls make_path() and makes it
         make_path()
-        return path
+        return download_path
 
 
 youtube_config = {      # --------------------CHANGE-THIS!!!--------------------- #
@@ -490,7 +595,7 @@ def set_path():
     clear()
     get_path()
     print(color.red(color.bold("------------------------CHANGE-PATH-------------------------")))
-    print("Your current path is: " + color.yellow(color.bold(path)))
+    print("Your current path is: " + color.yellow(color.bold(download_path)))
     new_path = str(input("\nType your new path...\n" + enter_to_return() +
                          "\n>:"))
     if new_path == "":  # check user input, if blank, return
@@ -501,9 +606,9 @@ def set_path():
         if not os.path.exists(new_path):    # checks if new path exists,
             os.makedirs(new_path)   # if not, create it,
         Json.encode(new_path + "/", config_dir + "path.json")  # then encode it
-        get_path()  # change global variable path
         clear()
-        return
+        print("The application need to be restarted for the changes take effect. Exiting.")
+        sys.exit(0)
 
 
 def set_compress_type():
@@ -522,16 +627,16 @@ def set_sorting_type():
           ": This type of sorting will result in 6 folders:\n"
           "annotations, descriptions, metadata, videos, thumbnails, subtitles."
           "\n%s: PATH/channel_name/file_type/downloaded_files\n" % color.yellow(color.bold("i.e.")))
-    print("Current sorting: %s" % color.red(color.bold(sort_type)))
+    print("Current sorting: %s" % color.red(color.bold(organizer.get_sort_type())))
     print(enter_to_return())
     sorting_choice = str(input("Choose:\n>:"))
     clear()
     if sorting_choice == "":
         return
     elif sorting_choice.lower() == "1":
-        organizer.all_in_one(path)
+        organizer.all_in_one(download_path)
     elif sorting_choice.lower() == "2":
-        organizer.sort_by_type(path)
+        organizer.sort_by_type(download_path)
     wait_input()
 
 
@@ -605,9 +710,9 @@ def config_handler():
               "  " + color.yellow(color.bold(download_format.get_format())))
 
         print(color.yellow(color.bold("    path")) + ") Set download path       " + color.red(color.bold("|")) +
-              "  " + color.yellow(color.bold(path)))
+              "  " + color.yellow(color.bold(download_path)))
         print(color.yellow(color.bold("    sort")) + ") Set sorting type        " + color.red(color.bold("|")) +
-              "  " + color.yellow(color.bold(sort_type)))
+              "  " + color.yellow(color.bold(organizer.get_sort_type())))
         print(enter_to_return())
         config_choice = str(input(">:"))  # try to convert choice(str) to choice(int),
         if config_choice == "":
@@ -723,17 +828,18 @@ def download_choice():
     for url in videos_lst:
         youtube_download(url)
 
-    if sort_type == "sort_by_type":
-        print(color.yellow(color.bold("\n Re-applying sorting type...")))
-        organizer.sort_by_type(path)
-        print(color.yellow(color.bold(" DONE!")))
-
     if warnings >= 1:
         print("\n   Download fished with %d warnings..." % warnings)
     if len(errors) >= 1:
         print(color.red(color.bold("\n   Download fished with %s errors..." % str(len(errors)))))
         for error in errors:
             print(color.red(color.bold(error)))
+
+    if organizer.get_sort_type() == "sort_by_type":
+        print(color.yellow(color.bold("\n Applying sorting type...")))
+        organizer.sort_by_type(download_path)
+        print(color.yellow(color.bold(" DONE!")))
+
     print()
     wait_input()
 
@@ -800,17 +906,18 @@ def channels_choice():
                 sleep(0.25)
                 youtube_download(channels[channel])
 
-            if sort_type == "sort_by_type":
-                print(color.yellow(color.bold("\nApplying sorting type...")))
-                organizer.sort_by_type(path)
-                print(color.yellow(color.bold(" DONE!")))
-
             if warnings >= 1:
                 print("\n   Download fished with %d warnings..." % warnings)
             if len(errors) >= 1:
                 print(color.red(color.bold("\n   Download fished with %s errors..." % str(len(errors)))))
                 for error in errors:
                     print(color.red(color.bold(error)))
+
+            if organizer.get_sort_type() == "sort_by_type":
+                print(color.yellow(color.bold("\n Applying sorting type...")))
+                organizer.sort_by_type(download_path)
+                print(color.yellow(color.bold(" DONE!")))
+
             print()
             wait_input()
 
@@ -856,20 +963,112 @@ def torrent_handler():
     while torrent_maintainer:
         clear()
         print(color.red(color.bold("----------------------TORRENT-INTERFACE---------------------")))
-        if torrent.client_auth_log_in():
+        if qbittorrent.client_auth_log_in():
             print("Login status: %s"
-                  % color.green(color.bold("Successful  |  Client Version: %s" % torrent.client_version())))
+                  % color.green(color.bold("Successful  |  Client Version: %s" % qbittorrent.client_version())))
         else:
             print("Login status: %s  |  Enable bypass for clients on the localhost."
                   % color.red(color.bold("Failed")))
         print()
-        print(color.yellow(color.bold("1")) + ") Change login                     " +
+        print(color.yellow(color.bold("1")) + ") Create torrent                   " +
+              color.red(color.bold("|")) + "")
+        print(color.yellow(color.bold("2")) + ") List mgtow-archive torrents      " +
+              color.red(color.bold("|")) + "")
+        print(color.yellow(color.bold("3")) + ") Change login                     " +
               color.red(color.bold("|")) + "  %s:%s"
-              % (torrent.get_config()["ip"], torrent.get_config()["port"]))
+              % (qbittorrent.get_config()["ip"], qbittorrent.get_config()["port"]))
         print(enter_to_return())
         torrent_choice = str(input(">:"))
 
         if torrent_choice == "1":
+            while True:
+                clear()
+                print(color.red(color.bold("-------------------------ADD-TORRENT------------------------")))
+
+                if len(organizer.get_downloaded_channels(download_path)) == 0:
+                    print(color.yellow(color.bold("No channels were found.")))
+                    wait_input()
+                    return
+
+                count = 0
+                count_list = []
+                channel_dict = dict()
+
+                for channel in organizer.get_downloaded_channels(download_path):
+                    count += 1
+                    count_list.append(str(count))
+                    channel_dict[str(count)] = channel
+
+                for channel in channel_dict:
+                    print("%s)  Name: %s\n"
+                          "    Path: %s\n"
+                          "    Size: %.2fGB\n" % (color.yellow(color.bold(channel)),
+                                                  channel_dict[channel].rsplit("/", 1)[1],
+                                                  channel_dict[channel],
+                                                  get_channel_size(channel_dict[channel]) / 1073741824))
+                print(enter_to_return())
+                add_channel_choice = str(input(">:"))
+
+                if add_channel_choice == "":
+                    return
+                elif add_channel_choice in count_list:
+                    clear()
+                    print(color.red(color.bold("-------------------------ADD-TORRENT------------------------")))
+                    add_torrent_continue = str(input("Are you sure you want to add channel %s to a .torrent? [y/N]"
+                                                     % channel_dict[add_channel_choice].rsplit("/", 1)[1]))
+                    if add_torrent_continue not in affirmative_choice:
+                        return
+
+                    clear()
+                    print(color.red(color.bold("-------------------------ADD-TORRENT------------------------")))
+                    torrent_file_path = download_path + channel_dict[add_channel_choice].rsplit("/", 1)[1] + ".torrent"
+                    print(color.yellow(color.bold("Adding channel '" +
+                                                  channel_dict[add_channel_choice].rsplit("/", 1)[1]
+                                                  + "' to a .torrent\n")))
+                    print(color.yellow(color.bold("Chunk size is on auto detection\n")))
+                    print(color.yellow(color.bold("Using %d trackers\n" % len(trackers_list))))
+                    print(color.red(color.bold("     This could take a while depending on the channel size.\n"
+                                               "     DO NOT EXIT!\n")))
+                    channel_clock = process_time()
+                    create_torrent.make(path=channel_dict[add_channel_choice], trackers=trackers_list, piece_size=None,
+                                        save_torrent_path=torrent_file_path)
+                    print(color.red(color.bold("\nSaved the .torrent file to %s\n" % torrent_file_path)))
+                    print(color.red(color.bold("Finished .torrent file in %.0fs\n") % channel_clock))
+                    print("\nAdding channel .torrent to qbittorrent... ", end="")
+                    print(color.yellow(color.bold(qbittorrent.add_mgtow_torrent(torrent_file=torrent_file_path))))
+                    wait_input()
+
+                else:
+                    clear()
+                    wait_input()
+
+        elif torrent_choice == "2":
+            clear()
+            print(color.red(color.bold("-------------------MGTOW-ARCHIVE-TORRENTS-------------------")))
+            if not qbittorrent.client_auth_log_in():
+                print(color.red(color.bold("Login Failed. Check login credentials.")))
+                wait_input()
+                return
+
+            mgtow_torrents = qbittorrent.list_mgtow_torrents()
+            if len(mgtow_torrents) == 0:
+                print(color.yellow(color.bold("No torrents were found with the category 'mgtow-archive'.")))
+                wait_input()
+                return
+
+            print("Found %s torrents with category 'mgtow-archive'."
+                  % color.yellow(color.bold(str(len(mgtow_torrents)))))
+            print()
+            count = 0
+            for torrent in mgtow_torrents:
+                count += 1
+                print("     Torrent %s of %s" % (count, len(mgtow_torrents)))
+                print("     Name: %s" % torrent.name)
+                print("     Size: %.2fGB" % (torrent.size / 1073741824))
+                print()
+            wait_input()
+
+        elif torrent_choice == "3":
             clear()
             print(color.red(color.bold("BE CAREFUL WHEN CHANGING THE LOGIN IP AND PORT!"
                                        "\nANY MISLEADING CHANGES COULD BE CATASTROPHIC!"
@@ -879,16 +1078,17 @@ def torrent_handler():
             while True:
                 clear()
                 print(color.red(color.bold("------------------------CHANGE-LOGIN------------------------")))
-                if torrent.client_auth_log_in():
+                if qbittorrent.client_auth_log_in():
                     print("Login status: %s" % color.green(color.bold("Successful  |  Client Version: %s"
-                                                                      % torrent.client_version())))
+                                                                      % qbittorrent.client_version())))
                 else:
                     print("Login status: %s" % color.red(color.bold("Failed")))
                 print()
-                print(color.yellow(color.bold("1")) + ") IP:        %s" % torrent.get_config()["ip"])
-                print(color.yellow(color.bold("2")) + ") Port:      %s" % torrent.get_config()["port"])
-                print(color.yellow(color.bold("3")) + ") Username:  %s" % torrent.get_config()["username"])
-                print(color.yellow(color.bold("4")) + ") Password:  %s" % torrent.get_config()["password"])
+                print(color.yellow(color.bold("1")) + ") IP:        %s" % qbittorrent.get_config()["ip"])
+                print(color.yellow(color.bold("2")) + ") Port:      %s" % qbittorrent.get_config()["port"])
+                print(color.yellow(color.bold("3")) + ") Username:  %s" % qbittorrent.get_config()["username"])
+                print(color.yellow(color.bold("4")) + ") Password:  %s" %
+                      Base64.decode64(qbittorrent.get_config()["password"]))
                 print(color.yellow(color.bold("0")) + ") Reset login to default")
                 print(enter_to_return())
                 change_login_choice = str(input(">:"))
@@ -897,57 +1097,57 @@ def torrent_handler():
                     clear()
                     print(color.red(color.bold("--------------------------CHANGE-IP-------------------------")))
                     print(color.yellow(color.bold("Leave everything blank to cancel.\n")))
-                    print("Current IP: %s" % torrent.get_config()["ip"])
+                    print("Current IP: %s" % qbittorrent.get_config()["ip"])
                     print("\nEnter the new IP to the used.")
                     new_ip = str(input(">:"))
                     if new_ip == "":
                         return
                     else:
-                        new_config = torrent.get_config()
+                        new_config = qbittorrent.get_config()
                         new_config["ip"] = new_ip
-                        torrent.update_config(new_config)
+                        qbittorrent.update_config(new_config)
 
                 elif change_login_choice == "2":
                     clear()
                     print(color.red(color.bold("-------------------------CHANGE-PORT------------------------")))
                     print(color.yellow(color.bold("Leave everything blank to cancel.\n")))
-                    print("Current port: %s" % torrent.get_config()["port"])
+                    print("Current port: %s" % qbittorrent.get_config()["port"])
                     print("\nEnter the new port to the used.")
                     new_port = str(input(">:"))
                     if new_port == "":
                         return
                     else:
-                        new_config = torrent.get_config()
+                        new_config = qbittorrent.get_config()
                         new_config["port"] = new_port
-                        torrent.update_config(new_config)
+                        qbittorrent.update_config(new_config)
 
                 elif change_login_choice == "3":
                     clear()
                     print(color.red(color.bold("-----------------------CHANGE-USERNAME----------------------")))
                     print(color.yellow(color.bold("Leave everything blank to cancel.\n")))
-                    print("Current username: %s" % torrent.get_config()["username"])
+                    print("Current username: %s" % qbittorrent.get_config()["username"])
                     print("\nEnter the new username to the used.")
                     new_username = str(input(">:"))
                     if new_username == "":
                         return
                     else:
-                        new_config = torrent.get_config()
+                        new_config = qbittorrent.get_config()
                         new_config["username"] = new_username
-                        torrent.update_config(new_config)
+                        qbittorrent.update_config(new_config)
 
                 elif change_login_choice == "4":
                     clear()
                     print(color.red(color.bold("-----------------------CHANGE-PASSWORD----------------------")))
                     print(color.yellow(color.bold("Leave everything blank to cancel.\n")))
-                    print("Current password: %s" % torrent.get_config()["password"])
+                    print("Current password: %s" % Base64.decode64(qbittorrent.get_config()["password"]))
                     print("\nEnter the new password to the used.")
                     new_password = str(input(">:"))
                     if new_password == "":
                         return
                     else:
-                        new_config = torrent.get_config()
-                        new_config["password"] = new_password
-                        torrent.update_config(new_config)
+                        new_config = qbittorrent.get_config()
+                        new_config["password"] = Base64.encode64(new_password)
+                        qbittorrent.update_config(new_config)
 
                 elif change_login_choice == "0":
                     clear()
@@ -955,7 +1155,7 @@ def torrent_handler():
                     torrent_reset_config_choice = str(input("This will undo all changes to the torrent configuration. "
                                                             "Proceed? [y/N]"))
                     if torrent_reset_config_choice in affirmative_choice:
-                        torrent.make_default_config()
+                        qbittorrent.make_default_config()
                     else:
                         return
 
@@ -980,12 +1180,12 @@ if __name__ == "__main__":
     color = Color()
     organizer = Organizer()
     download_format = Format()
-    torrent = Torrent()
+    create_torrent = CreateTorrent()
+    qbittorrent = Qbittorrent()
     compress = Compress()
 
     get_config_dir()
     get_path()
-    organizer.get_sort_type()
 
     maintainer = True
     while maintainer:
