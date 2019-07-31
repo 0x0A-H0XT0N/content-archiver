@@ -56,6 +56,7 @@ created_by_str = "https://github.com/PhoenixK7PB/mgtow-archive"
 
 torrent = Torrent(path=root_path + "download_archive", trackers=trackers_list, piece_size=None, source=source_str,
                   comment=comment_str, created_by=created_by_str)
+print(torrent.get_info())
 torrent.generate()
 with open(root_path + "download_archive.torrent", 'wb') as f:
     torrent.save(f)

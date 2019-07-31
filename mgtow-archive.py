@@ -6,37 +6,35 @@
 #  ╚═╝     ╚═╝ ╚═════╝   ╚═╝    ╚═════╝  ╚══╝╚══╝     ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝
 # https://github.com/PhoenixK7PB/mgtow-archive
 #
-# TODO: add torrent options
 # TODO: add options to edit, remove and download specific channels
 # TODO: compressing system
 # TODO: move all config files to a single file
 # TODO: re-make README.md
-# TODO: maked interface for choosing chunk size, download/upload limit,
-#  tracker to be added on the torrent, automatically add torrents when a channel is fully downloaded, etc.
+# TODO: make interface for tracker to be added on the torrent
 # TODO: make a read.me on the channel directory before starting the torrent,
 #  the content should have the project name, date, etc
+# TODO: make a list of all possible bit sizes for the user to choose from
 
+# import tarfile
 import json
 import signal
 import sys
 import os
 import tty
 import termios
-import fnmatch
-# import tarfile
+from fnmatch import fnmatch
 import base64
 
 import youtube_dl
-import colorama
+from colorama import Fore, init
 import qbittorrentapi
 from dottorrent import Torrent
 
 from pathlib import Path
 from time import sleep, process_time
 
-
 affirmative_choice = ["y", "yes", "s", "sim", "yeah", "yah", "ya"]  # affirmative choices, used on user interaction
-negative_choice = ["n", "no", "nao", "na", "nop", "nah"]    # negative choices, used on user interaction
+negative_choice = ["n", "no", "nao", "na", "nop", "nah"]  # negative choices, used on user interaction
 
 original_stdin_settings = termios.tcgetattr(sys.stdin)
 
@@ -44,53 +42,55 @@ download_archive = True
 
 sorted_folders_names = ["subtitles", "thumbnails", "descriptions", "metadata", "videos", "annotations"]
 
+excluded_channels_names = ["test", "torrents"]
+
 warnings = 0
 errors = []
 
 trackers_list = [
-            "udp://tracker4.itzmx.com:2710/announce",
-            "udp://tracker2.itzmx.com:6961/announce",
-            "https://t.quic.ws:443/announce",
-            "https://tracker.fastdownload.xyz:443/announce",
-            "http://torrent.nwps.ws:80/announce",
-            "udp://explodie.org:6969/announce",
-            "http://tracker2.itzmx.com:6961/announce",
-            "https://tracker.gbitt.info:443/announce",
-            "http://tracker4.itzmx.com:2710/announce",
-            "udp://tracker.trackton.ga:7070/announce",
-            "udp://tracker.tvunderground.org.ru:3218/announce",
-            "http://explodie.org:6969/announce",
-            "http://open.trackerlist.xyz:80/announce",
-            "udp://retracker.baikal-telecom.net:2710/announce",
-            "http://open.acgnxtracker.com:80/announce",
-            "udp://tracker.swateam.org.uk:2710/announce",
-            "udp://tracker.iamhansen.xyz:2000/announce",
-            "http://tracker.gbitt.info:80/announce",
-            "udp://retracker.lanta-net.ru:2710/announce",
-            "http://tracker.tvunderground.org.ru:3218/announce",
-            "udp://retracker.netbynet.ru:2710/announce",
-            "udp://tracker.supertracker.net:1337/announce",
-            "udp://ipv4.tracker.harry.lu:80/announce",
-            "udp://tracker.uw0.xyz:6969/announce",
-            "udp://zephir.monocul.us:6969/announce",
-            "udp://tracker.moeking.me:6969",
-            "udp://tracker.filemail.com:6969/announce",
-            "udp://tracker.filepit.to:6969/announce",
-            "wss://tracker.openwebtorrent.com:443/announce",
-            "http://gwp2-v19.rinet.ru:80/announce",
-            "http://vps02.net.orel.ru:80/announce",
-            "http://tracker.port443.xyz:6969/announce",
-            "http://mail2.zelenaya.net:80/announce",
-            "http://open.acgtracker.com:1096/announce",
-            "http://tracker.vivancos.eu/announce",
-            "udp://carapax.net:6969/announce",
-            "udp://tracker.novg.net:6969/announce",
-            "http://tracker.novg.net:6969/announce",
-            "http://carapax.net:6969/announce",
-            "udp://torrentclub.tech:6969/announce",
-            "udp://home.penza.com.ru:6969/announce",
-            "udp://tracker.dyn.im:6969/announce",
-        ]
+    "udp://tracker4.itzmx.com:2710/announce",
+    "udp://tracker2.itzmx.com:6961/announce",
+    "https://t.quic.ws:443/announce",
+    "https://tracker.fastdownload.xyz:443/announce",
+    "http://torrent.nwps.ws:80/announce",
+    "udp://explodie.org:6969/announce",
+    "http://tracker2.itzmx.com:6961/announce",
+    "https://tracker.gbitt.info:443/announce",
+    "http://tracker4.itzmx.com:2710/announce",
+    "udp://tracker.trackton.ga:7070/announce",
+    "udp://tracker.tvunderground.org.ru:3218/announce",
+    "http://explodie.org:6969/announce",
+    "http://open.trackerlist.xyz:80/announce",
+    "udp://retracker.baikal-telecom.net:2710/announce",
+    "http://open.acgnxtracker.com:80/announce",
+    "udp://tracker.swateam.org.uk:2710/announce",
+    "udp://tracker.iamhansen.xyz:2000/announce",
+    "http://tracker.gbitt.info:80/announce",
+    "udp://retracker.lanta-net.ru:2710/announce",
+    "http://tracker.tvunderground.org.ru:3218/announce",
+    "udp://retracker.netbynet.ru:2710/announce",
+    "udp://tracker.supertracker.net:1337/announce",
+    "udp://ipv4.tracker.harry.lu:80/announce",
+    "udp://tracker.uw0.xyz:6969/announce",
+    "udp://zephir.monocul.us:6969/announce",
+    "udp://tracker.moeking.me:6969",
+    "udp://tracker.filemail.com:6969/announce",
+    "udp://tracker.filepit.to:6969/announce",
+    "wss://tracker.openwebtorrent.com:443/announce",
+    "http://gwp2-v19.rinet.ru:80/announce",
+    "http://vps02.net.orel.ru:80/announce",
+    "http://tracker.port443.xyz:6969/announce",
+    "http://mail2.zelenaya.net:80/announce",
+    "http://open.acgtracker.com:1096/announce",
+    "http://tracker.vivancos.eu/announce",
+    "udp://carapax.net:6969/announce",
+    "udp://tracker.novg.net:6969/announce",
+    "http://tracker.novg.net:6969/announce",
+    "http://carapax.net:6969/announce",
+    "udp://torrentclub.tech:6969/announce",
+    "udp://home.penza.com.ru:6969/announce",
+    "udp://tracker.dyn.im:6969/announce",
+]
 
 
 class Color:
@@ -98,12 +98,11 @@ class Color:
     Return text with color using colorama.
     Pretty much straight forward to read.
     Just use Color().wantedColorOrBold(textToBeColoredOrBolded).
-    reset() reset the last color usage
     """
-    RED = colorama.Fore.RED
-    YELLOW = colorama.Fore.YELLOW
-    BLUE = colorama.Fore.BLUE
-    GREEN = colorama.Fore.GREEN
+    RED = Fore.RED
+    YELLOW = Fore.YELLOW
+    BLUE = Fore.BLUE
+    GREEN = Fore.GREEN
     BOLD = '\033[1m'
     END = '\033[0m'
 
@@ -121,10 +120,6 @@ class Color:
 
     def bold(self, text):
         return self.BOLD + text + self.END
-
-    @staticmethod
-    def reset():
-        return colorama.Style.RESET_ALL
 
 
 class Logger(object):
@@ -198,31 +193,31 @@ class Organizer:
             for file in os.listdir(channel):
                 absolute_file_path = channel + "/" + file
                 if os.path.isfile(absolute_file_path):
-                    if fnmatch.fnmatch(file, "*.tar.gz"):
+                    if fnmatch(file, "*.tar.gz"):
                         pass
-                    elif fnmatch.fnmatch(file, "*.jpg"):
+                    elif fnmatch(file, "*.jpg"):
                         os.rename(absolute_file_path, channel + "/thumbnails/" + file)
-                    elif fnmatch.fnmatch(file, "*.description"):
+                    elif fnmatch(file, "*.description"):
                         os.rename(absolute_file_path, channel + "/descriptions/" + file)
-                    elif fnmatch.fnmatch(file, "*.info.json"):
+                    elif fnmatch(file, "*.info.json"):
                         os.rename(absolute_file_path, channel + "/metadata/" + file)
-                    elif fnmatch.fnmatch(file, "*.annotations.xml"):
+                    elif fnmatch(file, "*.annotations.xml"):
                         os.rename(absolute_file_path, channel + "/annotations/" + file)
-                    elif fnmatch.fnmatch(file, "*.mp4"):
+                    elif fnmatch(file, "*.mp4"):
                         os.rename(absolute_file_path, channel + "/videos/" + file)
-                    if fnmatch.fnmatch(file, "*.vtt"):
+                    if fnmatch(file, "*.vtt"):
                         os.rename(absolute_file_path, channel + "/subtitles/" + file)
-                    elif fnmatch.fnmatch(file, "*.webm"):
+                    elif fnmatch(file, "*.webm"):
                         os.rename(absolute_file_path, channel + "/videos/" + file)
-                    elif fnmatch.fnmatch(file, "*.m4a"):
+                    elif fnmatch(file, "*.m4a"):
                         os.rename(absolute_file_path, channel + "/videos/" + file)
-                    elif fnmatch.fnmatch(file, "*.mp3"):
+                    elif fnmatch(file, "*.mp3"):
                         os.rename(absolute_file_path, channel + "/videos/" + file)
-                    elif fnmatch.fnmatch(file, "*.opus"):
+                    elif fnmatch(file, "*.opus"):
                         os.rename(absolute_file_path, channel + "/videos/" + file)
-                    elif fnmatch.fnmatch(file, "*.mkv"):
+                    elif fnmatch(file, "*.mkv"):
                         os.rename(absolute_file_path, channel + "/videos/" + file)
-                    elif fnmatch.fnmatch(file, "*.torrent"):
+                    elif fnmatch(file, "*.torrent"):
                         pass
                 elif os.path.isdir(absolute_file_path):
                     # handle?
@@ -260,6 +255,8 @@ class Organizer:
     def get_downloaded_channels(root_path):
         downloaded_channels_list = []
         for directory in os.listdir(os.path.abspath(root_path)):
+            if directory in excluded_channels_names:
+                continue
             if os.path.isdir(root_path + directory):
                 downloaded_channels_list.append(root_path + directory)
         return downloaded_channels_list
@@ -274,10 +271,10 @@ class Format:
     def __init__(self):
         self.format_config = config_dir + "format_config.json"
         self.formats = {
-            "mp4":              "mp4[height=720]/mp4[height<720]/mp4",
-            "mp3":              "mp3",
-            "bestaudio":        "bestaudio",
-            "best":             "best",
+            "mp4": "mp4[height=720]/mp4[height<720]/mp4",
+            "mp3": "mp3",
+            "bestaudio": "bestaudio",
+            "best": "best",
         }
 
     def get_format(self, raw=False):
@@ -341,6 +338,11 @@ class CreateTorrent:
         with open(save_torrent_path, 'wb') as file:
             torrent.save(file)
 
+    def generate_bit_size(self, path, trackers, save_torrent_path, piece_size=None):
+        torrent = Torrent(path=path, trackers=trackers, piece_size=piece_size, exclude=self.exclude,
+                          source=self.source_str, comment=self.comment_str, created_by=self.created_by_str)
+        return torrent.get_info()
+
 
 class Qbittorrent:
     def __init__(self):
@@ -392,6 +394,18 @@ class Qbittorrent:
     def client_version(self):
         return self.client_instance.app_version()
 
+    def get_download_limit(self):
+        return self.client_instance.transfer_download_limit()
+
+    def set_download_limit(self, limit):
+        return self.client_instance.transfer_set_download_limit(limit=limit)
+
+    def set_upload_limit(self, limit):
+        return self.client_instance.transfer_set_upload_limit(limit=limit)
+
+    def get_upload_limit(self):
+        return self.client_instance.transfer_upload_limit()
+
     def list_mgtow_torrents(self):
         return self.client_instance.torrents_info(status_filter="all", category="mgtow-archive")
 
@@ -436,13 +450,13 @@ def wait_input():
     this function will detect any key press, until that happens, the program will wait
     """
     print("Press " + color.yellow(color.bold("any key")) + " to continue...")
-    tty.setcbreak(sys.stdin)    # set "stdin" in raw mode, no line buffering from here
-    user_input = None   # used to control while loop, the user input will be None,
+    tty.setcbreak(sys.stdin)  # set "stdin" in raw mode, no line buffering from here
+    user_input = None  # used to control while loop, the user input will be None,
     # if the user input changes, the while loop should be broken
-    while user_input is None:   # while the user input is None (e.i. no key press detect on "stdin"), wait...
-        user_input = sys.stdin.read(1)[0]   # this will be reading "stdin" until a key is detected
-        clear()     # this will only be reached when a key is detected, until that happens, this will not be reached
-    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, original_stdin_settings)    # set "stdin" to default (no raw input)
+    while user_input is None:  # while the user input is None (e.i. no key press detect on "stdin"), wait...
+        user_input = sys.stdin.read(1)[0]  # this will be reading "stdin" until a key is detected
+        clear()  # this will only be reached when a key is detected, until that happens, this will not be reached
+    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, original_stdin_settings)  # set "stdin" to default (no raw input)
 
 
 def enter_to_return():
@@ -480,13 +494,13 @@ def show_menu():
     print(color.red("   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝"))
     print("                 by " + color.red(color.bold("PhoenixK7PB")))
     print(color.yellow(color.bold("1")) + ") Download video/playlist/channel  " +
-                       color.red(color.bold("|")) + "  " + color.yellow(color.bold("conf")) + ") General configuration")
+          color.red(color.bold("|")) + "  " + color.yellow(color.bold("conf")) + ") General configuration")
     print(color.yellow(color.bold("2")) + ") Channels                         " +
-                       color.red(color.bold("|")) + "  ")
+          color.red(color.bold("|")) + "  ")
     print(color.yellow(color.bold("3")) + ") qBittorrent interface (v4.1+)    " +
-                       color.red(color.bold("|")) + "  ")
+          color.red(color.bold("|")) + "  ")
     print(color.yellow(color.bold("0")) + ") Exit                             " +
-                       color.red(color.bold("|")) + "  ")
+          color.red(color.bold("|")) + "  ")
 
 
 def get_config_dir():
@@ -524,20 +538,22 @@ def make_path():
                           color.yellow(color.bold("Enter")) + " to use your " +
                           color.yellow(color.bold("home path")) + "." + "\n>:"))
 
-    if path_name == "":     # if user input is blank,
+    if path_name == "":  # if user input is blank,
         clear()
-        if not os.path.exists(str(Path.home())):    # check if user home exists,
-            os.makedirs(str(Path.home()))   # if not, create it
-        Json.encode(str(Path.home() + "/"), config_dir + "path.json")  # encode JSON file containing the path (home path in this case)
+        if not os.path.exists(str(Path.home())):  # check if user home exists,
+            os.makedirs(str(Path.home()))  # if not, create it
+        Json.encode(str(Path.home() + "/"),
+                    config_dir + "path.json")  # encode JSON file containing the path (home path in this case)
 
-    else:   # if user input is not blank,
+    else:  # if user input is not blank,
         clear()
-        if not os.path.exists(path_name):   # check if user input path exists
+        if not os.path.exists(path_name):  # check if user input path exists
             os.makedirs(path_name)  # if not, create it
-        Json.encode(path_name + "/", config_dir + "path.json")     # encode JSON file containing the user path
+        Json.encode(path_name + "/", config_dir + "path.json")  # encode JSON file containing the user path
 
     global download_path
-    download_path = Json.decode(config_dir + "path.json", return_content=True)   # make a global variable containing the new path
+    download_path = Json.decode(config_dir + "path.json",
+                                return_content=True)  # make a global variable containing the new path
     clear()
     print("The application need to be restarted for the changes take effect. Exiting.")
     sys.exit(0)
@@ -551,39 +567,39 @@ def get_path():
     :return: Make a global variable called "path",
     """
     get_config_dir()
-    try:    # tries to decode path
+    try:  # tries to decode path
         global download_path
         download_path = Json.decode(config_dir + "path.json", return_content=True)
         return download_path
-    except FileNotFoundError:   # if the file is not founded, calls make_path() and makes it
+    except FileNotFoundError:  # if the file is not founded, calls make_path() and makes it
         make_path()
         return download_path
 
 
-youtube_config = {      # --------------------CHANGE-THIS!!!--------------------- #
+youtube_config = {  # --------------------CHANGE-THIS!!!--------------------- #
 
-    'logger':                   Logger(),           # Logger instance, don't change it!
-    'download_archive':         get_path() + '/download_archive',   # Use download archive file, don't change it!
+    'logger': Logger(),  # Logger instance, don't change it!
+    'download_archive': get_path() + '/download_archive',  # Use download archive file, don't change it!
 
-    'format':                   Format().get_format(raw=True),  # Video format code. See yt-dl for more info.
-    'outtmpl':                  get_path() + '/%(uploader)s/%(title)s.%(ext)s',
+    'format': Format().get_format(raw=True),  # Video format code. See yt-dl for more info.
+    'outtmpl': get_path() + '/%(uploader)s/%(title)s.%(ext)s',
 
-    'restrictfilenames':        True,               # Do not allow "&" and spaces in file names
-    'no_warnings':              True,               # Do not print out anything for warnings.
-    'ignoreerrors':             True,               # Do not stop on download errors.
-    'nooverwrites':             True,               # Prevent overwriting files.
-    'writedescription':         True,               # Write the video description to a .description file
-    'writeinfojson':            True,               # Write metadata to a json file
-    'writethumbnail':           True,               # Write the thumbnail image to a file
-    'writeautomaticsub':        True,               # Write the automatically generated subtitles to a file
-    'writeannotations':         True,               # Write video annotations
-    'verbose':                  False,              # Print additional info to stdout.
-    'quiet':                    False,              # Do not print messages to stdout.
-    'simulate':                 False,              # Do not download the video files.
-    'skip_download':            False,              # Skip the actual download of the video file
-    'noplaylist':               False,              # Download single video instead of a playlist if in doubt.
-    'playlistrandom':           False,              # Download playlist items in random order.
-    'playlistreverse':          False,              # Download playlist items in reverse order.
+    'restrictfilenames': True,  # Do not allow "&" and spaces in file names
+    'no_warnings': True,  # Do not print out anything for warnings.
+    'ignoreerrors': True,  # Do not stop on download errors.
+    'nooverwrites': True,  # Prevent overwriting files.
+    'writedescription': True,  # Write the video description to a .description file
+    'writeinfojson': True,  # Write metadata to a json file
+    'writethumbnail': True,  # Write the thumbnail image to a file
+    'writeautomaticsub': True,  # Write the automatically generated subtitles to a file
+    'writeannotations': True,  # Write video annotations
+    'verbose': False,  # Print additional info to stdout.
+    'quiet': False,  # Do not print messages to stdout.
+    'simulate': False,  # Do not download the video files.
+    'skip_download': False,  # Skip the actual download of the video file
+    'noplaylist': False,  # Download single video instead of a playlist if in doubt.
+    'playlistrandom': False,  # Download playlist items in random order.
+    'playlistreverse': False,  # Download playlist items in reverse order.
 }
 
 
@@ -602,9 +618,9 @@ def set_path():
         clear()
         return
 
-    else:   # else: check, encode, change global variable path and returns
-        if not os.path.exists(new_path):    # checks if new path exists,
-            os.makedirs(new_path)   # if not, create it,
+    else:  # else: check, encode, change global variable path and returns
+        if not os.path.exists(new_path):  # checks if new path exists,
+            os.makedirs(new_path)  # if not, create it,
         Json.encode(new_path + "/", config_dir + "path.json")  # then encode it
         clear()
         print("The application need to be restarted for the changes take effect. Exiting.")
@@ -690,6 +706,7 @@ def set_format():
         else:
             clear()
             wait_input()
+
 
 def config_handler():
     """
@@ -963,12 +980,10 @@ def torrent_handler():
     while torrent_maintainer:
         clear()
         print(color.red(color.bold("----------------------TORRENT-INTERFACE---------------------")))
-        if qbittorrent.client_auth_log_in():
-            print("Login status: %s"
-                  % color.green(color.bold("Successful  |  Client Version: %s" % qbittorrent.client_version())))
-        else:
-            print("Login status: %s  |  Enable bypass for clients on the localhost."
-                  % color.red(color.bold("Failed")))
+        print("Login status: %s" % color.green(color.bold("Successful  |  Client Version: %s"
+                                                          % qbittorrent.client_version()))) if qbittorrent. \
+            client_auth_log_in() else print("Login status: %s  |  Enable bypass for clients on the localhost."
+                                            % color.red(color.bold("Failed")))
         print()
         print(color.yellow(color.bold("1")) + ") Create torrent                   " +
               color.red(color.bold("|")) + "")
@@ -984,6 +999,11 @@ def torrent_handler():
             while True:
                 clear()
                 print(color.red(color.bold("-------------------------ADD-TORRENT------------------------")))
+
+                if not qbittorrent.client_auth_log_in():
+                    print(color.red(color.bold("Login Failed. Check login credentials.")))
+                    wait_input()
+                    return
 
                 if len(organizer.get_downloaded_channels(download_path)) == 0:
                     print(color.yellow(color.bold("No channels were found.")))
@@ -1021,11 +1041,18 @@ def torrent_handler():
 
                     clear()
                     print(color.red(color.bold("-------------------------ADD-TORRENT------------------------")))
-                    torrent_file_path = download_path + channel_dict[add_channel_choice].rsplit("/", 1)[1] + ".torrent"
+                    if not os.path.exists(download_path + "torrents/"):
+                        os.makedirs(download_path + "torrents/")
+                    torrent_file_path = download_path + "torrents/"\
+                                                      + channel_dict[add_channel_choice].rsplit("/", 1)[1] + ".torrent"
                     print(color.yellow(color.bold("Adding channel '" +
                                                   channel_dict[add_channel_choice].rsplit("/", 1)[1]
                                                   + "' to a .torrent\n")))
-                    print(color.yellow(color.bold("Chunk size is on auto detection\n")))
+                    print(color.yellow(color.bold("Generating optimal bit size based on ~1500 pieces.")))
+                    bit_size_info = create_torrent.generate_bit_size(path=channel_dict[add_channel_choice],
+                                                                     trackers=trackers_list, piece_size=None,
+                                                                     save_torrent_path=torrent_file_path)
+                    print(color.yellow(color.bold("Using bit size of %dkb.\n" % (bit_size_info[2] // 1000))))
                     print(color.yellow(color.bold("Using %d trackers\n" % len(trackers_list))))
                     print(color.red(color.bold("     This could take a while depending on the channel size.\n"
                                                "     DO NOT EXIT!\n")))
@@ -1078,11 +1105,9 @@ def torrent_handler():
             while True:
                 clear()
                 print(color.red(color.bold("------------------------CHANGE-LOGIN------------------------")))
-                if qbittorrent.client_auth_log_in():
-                    print("Login status: %s" % color.green(color.bold("Successful  |  Client Version: %s"
-                                                                      % qbittorrent.client_version())))
-                else:
-                    print("Login status: %s" % color.red(color.bold("Failed")))
+                print("Login status: %s" % color.green(color.bold("Successful  |  Client Version: %s"
+                                                                  % qbittorrent.client_version()))) if qbittorrent. \
+                    client_auth_log_in() else print("Login status: %s" % color.red(color.bold("Failed")))
                 print()
                 print(color.yellow(color.bold("1")) + ") IP:        %s" % qbittorrent.get_config()["ip"])
                 print(color.yellow(color.bold("2")) + ") Port:      %s" % qbittorrent.get_config()["port"])
@@ -1173,7 +1198,7 @@ def torrent_handler():
 
 
 if __name__ == "__main__":
-    colorama.init(autoreset=True)
+    init(autoreset=True)
     signal.signal(signal.SIGINT, signal_handler)
 
     # init instances
@@ -1206,7 +1231,7 @@ if __name__ == "__main__":
                 config_handler()
                 continue
 
-            else:   # if user type something that is not an option, ignore and wait for another input
+            else:  # if user type something that is not an option, ignore and wait for another input
                 clear()
                 wait_input()
                 continue
