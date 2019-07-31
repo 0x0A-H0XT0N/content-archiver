@@ -15,7 +15,6 @@
 #  the content should have the project name, date, etc
 # TODO: make a list of all possible bit sizes for the user to choose from
 
-# import tarfile
 import json
 import signal
 import sys
