@@ -393,18 +393,6 @@ class Qbittorrent:
     def client_version(self):
         return self.client_instance.app_version()
 
-    def get_download_limit(self):
-        return self.client_instance.transfer_download_limit()
-
-    def set_download_limit(self, limit):
-        return self.client_instance.transfer_set_download_limit(limit=limit)
-
-    def set_upload_limit(self, limit):
-        return self.client_instance.transfer_set_upload_limit(limit=limit)
-
-    def get_upload_limit(self):
-        return self.client_instance.transfer_upload_limit()
-
     def list_mgtow_torrents(self):
         return self.client_instance.torrents_info(status_filter="all", category="mgtow-archive")
 
