@@ -47,51 +47,6 @@ excluded_channels_names = ["test", "torrents"]
 warnings = 0
 errors = []
 
-trackers_list = [
-    "udp://tracker4.itzmx.com:2710/announce",
-    "udp://tracker2.itzmx.com:6961/announce",
-    "https://t.quic.ws:443/announce",
-    "https://tracker.fastdownload.xyz:443/announce",
-    "http://torrent.nwps.ws:80/announce",
-    "udp://explodie.org:6969/announce",
-    "http://tracker2.itzmx.com:6961/announce",
-    "https://tracker.gbitt.info:443/announce",
-    "http://tracker4.itzmx.com:2710/announce",
-    "udp://tracker.trackton.ga:7070/announce",
-    "udp://tracker.tvunderground.org.ru:3218/announce",
-    "http://explodie.org:6969/announce",
-    "http://open.trackerlist.xyz:80/announce",
-    "udp://retracker.baikal-telecom.net:2710/announce",
-    "http://open.acgnxtracker.com:80/announce",
-    "udp://tracker.swateam.org.uk:2710/announce",
-    "udp://tracker.iamhansen.xyz:2000/announce",
-    "http://tracker.gbitt.info:80/announce",
-    "udp://retracker.lanta-net.ru:2710/announce",
-    "http://tracker.tvunderground.org.ru:3218/announce",
-    "udp://retracker.netbynet.ru:2710/announce",
-    "udp://tracker.supertracker.net:1337/announce",
-    "udp://ipv4.tracker.harry.lu:80/announce",
-    "udp://tracker.uw0.xyz:6969/announce",
-    "udp://zephir.monocul.us:6969/announce",
-    "udp://tracker.moeking.me:6969",
-    "udp://tracker.filemail.com:6969/announce",
-    "udp://tracker.filepit.to:6969/announce",
-    "wss://tracker.openwebtorrent.com:443/announce",
-    "http://gwp2-v19.rinet.ru:80/announce",
-    "http://vps02.net.orel.ru:80/announce",
-    "http://tracker.port443.xyz:6969/announce",
-    "http://mail2.zelenaya.net:80/announce",
-    "http://open.acgtracker.com:1096/announce",
-    "http://tracker.vivancos.eu/announce",
-    "udp://carapax.net:6969/announce",
-    "udp://tracker.novg.net:6969/announce",
-    "http://tracker.novg.net:6969/announce",
-    "http://carapax.net:6969/announce",
-    "udp://torrentclub.tech:6969/announce",
-    "udp://home.penza.com.ru:6969/announce",
-    "udp://tracker.dyn.im:6969/announce",
-]
-
 
 class Color:
     """
@@ -324,6 +279,67 @@ class Base64:
 
 
 class CreateTorrent:
+    class Trackers:
+        def __init__(self):
+            self.trackers_json_path = config_dir + "trackers.json"
+
+        def make_default(self):
+            default_trackers = [
+                "udp://tracker4.itzmx.com:2710/announce",
+                "udp://tracker2.itzmx.com:6961/announce",
+                "https://t.quic.ws:443/announce",
+                "https://tracker.fastdownload.xyz:443/announce",
+                "http://torrent.nwps.ws:80/announce",
+                "udp://explodie.org:6969/announce",
+                "http://tracker2.itzmx.com:6961/announce",
+                "https://tracker.gbitt.info:443/announce",
+                "http://tracker4.itzmx.com:2710/announce",
+                "udp://tracker.trackton.ga:7070/announce",
+                "udp://tracker.tvunderground.org.ru:3218/announce",
+                "http://explodie.org:6969/announce",
+                "http://open.trackerlist.xyz:80/announce",
+                "udp://retracker.baikal-telecom.net:2710/announce",
+                "http://open.acgnxtracker.com:80/announce",
+                "udp://tracker.swateam.org.uk:2710/announce",
+                "udp://tracker.iamhansen.xyz:2000/announce",
+                "http://tracker.gbitt.info:80/announce",
+                "udp://retracker.lanta-net.ru:2710/announce",
+                "http://tracker.tvunderground.org.ru:3218/announce",
+                "udp://retracker.netbynet.ru:2710/announce",
+                "udp://tracker.supertracker.net:1337/announce",
+                "udp://ipv4.tracker.harry.lu:80/announce",
+                "udp://tracker.uw0.xyz:6969/announce",
+                "udp://zephir.monocul.us:6969/announce",
+                "udp://tracker.moeking.me:6969",
+                "udp://tracker.filemail.com:6969/announce",
+                "udp://tracker.filepit.to:6969/announce",
+                "wss://tracker.openwebtorrent.com:443/announce",
+                "http://gwp2-v19.rinet.ru:80/announce",
+                "http://vps02.net.orel.ru:80/announce",
+                "http://tracker.port443.xyz:6969/announce",
+                "http://mail2.zelenaya.net:80/announce",
+                "http://open.acgtracker.com:1096/announce",
+                "http://tracker.vivancos.eu/announce",
+                "udp://carapax.net:6969/announce",
+                "udp://tracker.novg.net:6969/announce",
+                "http://tracker.novg.net:6969/announce",
+                "http://carapax.net:6969/announce",
+                "udp://torrentclub.tech:6969/announce",
+                "udp://home.penza.com.ru:6969/announce",
+                "udp://tracker.dyn.im:6969/announce",
+                ]
+            return Json.encode(default_trackers, self.trackers_json_path)
+
+        def get(self):
+            try:
+                return Json.decode(self.trackers_json_path, return_content=True)
+            except FileNotFoundError:
+                self.make_default()
+                return self.get()
+
+        def update(self, new_list):
+            return Json.encode(new_list, self.trackers_json_path)
+
     def __init__(self):
         self.source_str = "mgtow-archive"
         self.comment_str = "Videos downloaded using mgtow-archive, github project page: " \
@@ -980,6 +996,9 @@ def torrent_handler():
         print(color.yellow(color.bold("3")) + ") Change login                     " +
               color.red(color.bold("|")) + "  %s:%s"
               % (qbittorrent.get_config()["ip"], qbittorrent.get_config()["port"]))
+        print(color.yellow(color.bold("4")) + ") Change trackers                  " +
+              color.red(color.bold("|")) + "  %d trackers"
+              % (len(create_torrent.Trackers().get())))
         print(enter_to_return())
         torrent_choice = str(input(">:"))
 
@@ -1033,19 +1052,20 @@ def torrent_handler():
                         os.makedirs(download_path + "torrents/")
                     torrent_file_path = download_path + "torrents/"\
                                                       + channel_dict[add_channel_choice].rsplit("/", 1)[1] + ".torrent"
+                    trackers = create_torrent.Trackers().get()
                     print(color.yellow(color.bold("Adding channel '" +
                                                   channel_dict[add_channel_choice].rsplit("/", 1)[1]
                                                   + "' to a .torrent\n")))
                     print(color.yellow(color.bold("Generating optimal bit size based on ~1500 pieces.")))
                     bit_size_info = create_torrent.generate_bit_size(path=channel_dict[add_channel_choice],
-                                                                     trackers=trackers_list, piece_size=None,
+                                                                     trackers=trackers, piece_size=None,
                                                                      save_torrent_path=torrent_file_path)
                     print(color.yellow(color.bold("Using bit size of %dkb.\n" % (bit_size_info[2] // 1000))))
-                    print(color.yellow(color.bold("Using %d trackers\n" % len(trackers_list))))
+                    print(color.yellow(color.bold("Using %d trackers\n" % len(trackers))))
                     print(color.red(color.bold("     This could take a while depending on the channel size.\n"
                                                "     DO NOT EXIT!\n")))
                     channel_clock = process_time()
-                    create_torrent.make(path=channel_dict[add_channel_choice], trackers=trackers_list, piece_size=None,
+                    create_torrent.make(path=channel_dict[add_channel_choice], trackers=trackers, piece_size=None,
                                         save_torrent_path=torrent_file_path)
                     print(color.red(color.bold("\nSaved the .torrent file to %s\n" % torrent_file_path)))
                     print(color.red(color.bold("Finished .torrent file in %.0fs\n") % channel_clock))
@@ -1178,12 +1198,93 @@ def torrent_handler():
                     clear()
                     wait_input()
 
+        elif torrent_choice == "4":
+            while True:
+                clear()
+                print(color.red(color.bold("-----------------------CHANGE-TRACKERS----------------------")))
+                print("%s trackers in use" % (color.yellow(color.bold(str(len(create_torrent.Trackers().get()))))))
+                print()
+                print(color.yellow(color.bold("1")) + ") See trackers                   ")
+                print(color.yellow(color.bold("2")) + ") Add trackers                   ")
+                print(color.yellow(color.bold("3")) + ") Remove trackers                ")
+                print(enter_to_return())
+                change_trackers_choice = str(input(">:"))
+                if change_trackers_choice == "":
+                    break
+
+                elif change_trackers_choice == "1":
+                    clear()
+                    print(color.red(color.bold("------------------------SEE-TRACKERS------------------------")))
+                    tracker_count = 0
+                    for tracker in create_torrent.Trackers().get():
+                        tracker_count += 1
+                        print("     %s) %s" % (color.yellow(color.bold(str(tracker_count))), tracker))
+                    wait_input()
+
+                elif change_trackers_choice == "2":
+                    clear()
+                    print(color.red(color.bold("------------------------ADD-TRACKERS------------------------")))
+                    new_trackers = []
+                    print(enter_to_return())
+                    print("Type the new tracker.")
+                    new_tracker = str(input(">:"))
+                    if new_tracker == "":
+                        return
+                    else:
+                        new_trackers.append(new_tracker)
+                        while True:
+                            add_another_tracker = str(input("\nAdd another one? [y/N]"))
+                            if add_another_tracker not in affirmative_choice:
+                                break
+                            else:
+                                new_tracker = str(input("\nType the new tracker.\n" + enter_to_return() + "\n>:"))
+                                if new_tracker == "":
+                                    clear()
+                                    break
+                                else:
+                                    new_trackers.append(new_tracker)
+
+                        old_trackers = create_torrent.Trackers().get()
+                        for tracker in new_trackers:
+                            old_trackers.append(tracker)
+                        create_torrent.Trackers().update(old_trackers)
+
+                elif change_trackers_choice == "3":
+                    while True:
+                        clear()
+                        print(color.red(color.bold("-----------------------REMOVE-TRACKERS----------------------")))
+                        print(enter_to_return())
+                        old_trackers = create_torrent.Trackers().get()
+                        tracker_count = 0
+                        for tracker in old_trackers:
+                            tracker_count += 1
+                            print("     %s) %s" % (color.yellow(color.bold(str(tracker_count))), tracker))
+
+                        remove_tracker = input("Type the number to be deleted.\n>:")
+                        if remove_tracker == "":
+                            break
+                        try:
+                            deleted_tracker = int(remove_tracker) - 1
+                            old_trackers.pop(deleted_tracker)
+                            create_torrent.Trackers().update(old_trackers)
+                        except ValueError:
+                            clear()
+                            print("Only numbers are accepted.")
+                            wait_input()
+                        except IndexError:
+                            clear()
+                            print("Number selected does not correspond to any tracker.")
+                            wait_input()
+
+                else:
+                    clear()
+                    wait_input()
+
         elif torrent_choice == "":
             break
         else:
             clear()
             wait_input()
-
 
 if __name__ == "__main__":
     init(autoreset=True)
