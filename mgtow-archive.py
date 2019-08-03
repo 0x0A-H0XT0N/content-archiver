@@ -34,7 +34,7 @@ from dottorrent import Torrent
 from pathlib import Path
 from time import sleep, process_time
 
-affirmative_choice = ["y", "yes", "s", "sim", "yeah", "yah", "ya"]  # affirmative choices, used on user interaction
+affirmative_choice = ["y", "Y", "yes", "s", "sim", "yeah", "yah", "ya"]  # affirmative choices, used on user interaction
 negative_choice = ["n", "no", "nao", "na", "nop", "nah"]  # negative choices, used on user interaction
 
 original_stdin_settings = termios.tcgetattr(sys.stdin)
@@ -437,9 +437,10 @@ class Groups:
 
     def add(self, name):
         default_attr = {
-            "name":         name,
-            "format":       "",
-            "channels":     [],
+            "name":             name,
+            "format":           "",
+            "channels":         {},
+            "create_time":      str(datetime.now().replace(microsecond=0)),
         }
         self.current.append(default_attr)
         return self.update_json(self.current)
@@ -977,7 +978,7 @@ def channels_choice():
                 continue
 
             print(color.red(color.bold("------------------------VIEW-CHANNELS-----------------------")))
-            print("Found %s channels...\n" % color.yellow(color.bold(str(len(channels)))))
+            print("Found %s channel(s)\n" % color.yellow(color.bold(str(len(channels)))))
             count = 0
 
             for channel in channels:
@@ -1030,38 +1031,137 @@ def groups_handler():
                     print("No groups where found.")
                     wait_input()
                     break
-                else:
-                    group_count = 0
-                    for group in current_groups:
-                        group_count += 1
-                        print("     %s) %s\n"
-                              % (color.yellow(color.bold(str(group_count))), group["name"]))
-                    print("Type the number of the group to be selected.")
-                    print(enter_to_return())
-                    selected_group = input(">:")
-                    if selected_group == "":
-                        break
-                    else:
-                        try:
-                            used_group = int(selected_group) - 1
-                            current_group = current_groups[used_group]
-                            while True:
-                                clear()
-                                print(color.red(
-                                    color.bold("------------------------GROUP-IN-USE------------------------")))
-                                print("Name: %s" % current_group["name"])
-                                wait_input()
-                                # TODO print name, channels, format, put options to download, add channel,
-                                #  change format, change name, etc.
-                        except ValueError:
-                            clear()
-                            print("Only numbers are accepted.")
-                            wait_input()
-                        except IndexError:
-                            clear()
-                            print("Number selected does not correspond to any group.")
-                            wait_input()
 
+                group_count = 0
+                for group in current_groups:
+                    group_count += 1
+                    print("     %s) %s\n"
+                          % (color.yellow(color.bold(str(group_count))), group["name"]))
+                print("Type the number of the group to be selected.")
+                print(enter_to_return())
+                selected_group = input(">:")
+                if selected_group == "":
+                    break
+
+                try:
+                    used_group = int(selected_group) - 1
+                    if used_group < 0:
+                        raise IndexError
+                    current_group = current_groups[used_group]
+                except ValueError:
+                    clear()
+                    print("Only numbers are accepted.")
+                    wait_input()
+                    continue
+                except IndexError:
+                    clear()
+                    print("Number selected does not correspond to any group.")
+                    wait_input()
+                    continue
+
+                while True:
+                    clear()
+                    print(color.red(
+                        color.bold("-------------------------GROUP-STATS------------------------")))
+                    print("Group name: %s" % color.yellow(color.bold(current_group["name"])))
+                    print("Creation date: %s" % color.yellow(color.bold(current_group["create_time"])))
+                    print("Download format: %s" % color.yellow(color.bold(current_group["format"])))
+                    print("%s channel(s)" % color.yellow(color.bold(str(len(current_group["channels"])))))
+                    print(color.red(
+                        color.bold("------------------------GROUP-ACTIONS-----------------------")))
+                    print(color.yellow(color.bold("1")) + ") Download")
+                    print(color.yellow(color.bold("2")) + ") Add channel(s)")
+                    print(color.yellow(color.bold("3")) + ") Remove channel(s)")
+                    print(color.yellow(color.bold("4")) + ") Rename group")
+                    print(enter_to_return())
+                    group_action = str(input(">:"))
+                    if group_action == "":
+                        break
+                    elif group_action == "1":
+                        while True:
+                            clear()
+                            print(color.red(color.bold("-----------------------DOWNLOAD-GROUP-----------------------")))
+                    elif group_action == "2":
+                        while True:
+                            clear()
+                            print(color.red(color.bold("--------------------ADD-CHANNEL-TO-GROUP--------------------")))
+                            print(color.yellow(color.bold("Leave blank to cancel.\n")))
+                            channel_name = str(input(color.yellow(color.bold("Name")) + " of the channel?\n>:"))
+                            channel_url = str(input(color.yellow(color.bold("\nLink")) + " of the channel?\n>:"))
+                            if channel_name and channel_url != "":
+                                current_group["channels"][channel_name] = channel_url
+                                groups.update_json(current_groups)
+                                add_another_channel_choice = str(input("\nAdd another channel? [y/N]\n>:"))
+                                if add_another_channel_choice not in affirmative_choice:
+                                    clear()
+                                    break
+                            else:
+                                break
+                    elif group_action == "3":
+                        while True:
+                            clear()
+                            print(color.red(color.bold("------------------REMOVE-CHANNEL-FROM-GROUP-----------------")))
+                            if len(current_group["channels"]) == 0:
+                                print("No channel was found")
+                                wait_input()
+                                break
+                            else:
+                                print("Found %s channel(s)\n"
+                                      % color.yellow(color.bold(str(len(current_group["channels"])))))
+
+                            channel_count = 0
+                            channel_count_dict = dict()
+                            for channel in current_group["channels"]:
+                                channel_count += 1
+                                print("      %s) Name: %s\n"
+                                      "      URL:  %s\n" % (color.yellow(color.bold(str(channel_count))),
+                                                            channel, current_group["channels"][channel]))
+                                channel_count_dict[channel_count] = channel
+                            print("Use '@ALL' to delete all groups %s" % color.yellow(color.bold("[CAUTION]")))
+                            print("Type the number of a channel to be removed")
+                            print(enter_to_return())
+                            removed_channel = str(input(">:"))
+                            if removed_channel == "":
+                                break
+                            elif removed_channel == "@ALL":
+                                clear()
+                                sure = str(input("Delete all channels selected. Proceed? [y/N]"))
+                                if sure in affirmative_choice:
+                                    current_group["channels"] = {}
+                                    groups.update_json(current_groups)
+                                    break
+                                else:
+                                    continue
+                            try:
+                                removed_channel = int(removed_channel)
+                                del current_group["channels"][channel_count_dict[removed_channel]]
+                            except ValueError:
+                                clear()
+                                print("Only numbers are accepted.")
+                                wait_input()
+                                continue
+                            except KeyError:
+                                clear()
+                                print("Number selected does not correspond to any group.")
+                                wait_input()
+                                continue
+                            groups.update_json(current_groups)
+                    elif group_action == "4":
+                        clear()
+                        print(color.red(
+                            color.bold("------------------------RENAME-GROUP------------------------")))
+                        print("Current group name: %s" % color.yellow(color.bold(current_group["name"])))
+                        print("Type the new group name")
+                        print(enter_to_return())
+                        new_name = str(input(">:"))
+                        if new_name == "":
+                            continue
+                        current_group["name"] = new_name
+                        groups.update_json(current_groups)
+                    else:
+                        clear()
+                        wait_input()
+                        continue
         elif groups_choice == "add":
             while True:
                 clear()
@@ -1073,7 +1173,7 @@ def groups_handler():
                     break
                 else:
                     groups.add(group_name)
-
+                    break
         elif groups_choice == "del":
             while True:
                 clear()
@@ -1101,19 +1201,22 @@ def groups_handler():
                         if sure in affirmative_choice:
                             groups.update_json([])
                             break
-                    else:
-                        try:
-                            deleted_group = int(removed_group) - 1
-                            groups.remove(deleted_group)
-                        except ValueError:
-                            clear()
-                            print("Only numbers are accepted.")
-                            wait_input()
-                        except IndexError:
-                            clear()
-                            print("Number selected does not correspond to any group.")
-                            wait_input()
-
+                    try:
+                        deleted_group = int(removed_group) - 1
+                        if deleted_group < 0:
+                            raise IndexError
+                    except ValueError:
+                        clear()
+                        print("Only numbers are accepted.")
+                        wait_input()
+                        continue
+                    except IndexError:
+                        clear()
+                        print("Number selected does not correspond to any group.")
+                        wait_input()
+                        continue
+                    groups.remove(deleted_group)
+                    break
         else:
             clear()
             wait_input()
