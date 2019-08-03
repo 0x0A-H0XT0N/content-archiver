@@ -1042,7 +1042,6 @@ def groups_handler():
                 selected_group = input(">:")
                 if selected_group == "":
                     break
-
                 try:
                     used_group = int(selected_group) - 1
                     if used_group < 0:
@@ -1058,7 +1057,6 @@ def groups_handler():
                     print("Number selected does not correspond to any group.")
                     wait_input()
                     continue
-
                 while True:
                     clear()
                     print(color.red(
@@ -1078,9 +1076,48 @@ def groups_handler():
                     if group_action == "":
                         break
                     elif group_action == "1":
-                        while True:
-                            clear()
-                            print(color.red(color.bold("-----------------------DOWNLOAD-GROUP-----------------------")))
+                        clear()
+                        print(color.red(color.bold("-----------------------DOWNLOAD-GROUP-----------------------")))
+                        if len(current_group["channels"]) == 0:
+                            print("No channel was found to be downloaded")
+                            wait_input()
+                            continue
+
+                        print(color.yellow(color.bold(str(len(current_group["channels"])))) +
+                              " channel(s) will be downloaded. " +
+                              color.yellow(color.bold("Proceed? [y/N]")))
+                        download_channels_choice = str(input(">:"))
+                        if download_channels_choice not in affirmative_choice:
+                            continue
+                        clear()
+                        print(color.yellow(color.bold("CTRL + C")) + " to cancel download.")
+                        sleep(0.5)
+                        channel_count = 0
+                        for channel in current_group["channels"]:
+                            channel_count += 1
+                            print("     \nChannel %d of %d" % (channel_count, len(current_group["channels"])))
+                            print("     Channel: %s" % channel)
+                            print("     URL: %s" % current_group["channels"][channel])
+                            print()
+                            sleep(0.25)
+                            youtube_download(current_group["channels"][channel])
+
+                        if warnings >= 1:
+                            print("\n   Download fished with %d warnings..." % warnings)
+                        if len(errors) >= 1:
+                            print(color.red(color.bold("\n   Download fished with %s errors..." % str(len(errors)))))
+                            for error in errors:
+                                print(color.red(color.bold(error)))
+
+                        if organizer.get_sort_type() == "sort_by_type":
+                            print(color.yellow(color.bold("\n Applying sorting type...")))
+                            organizer.sort_by_type(download_path)
+                            print(color.yellow(color.bold(" DONE!")))
+
+                        print()
+                        wait_input()
+                        return
+
                     elif group_action == "2":
                         while True:
                             clear()
@@ -1093,7 +1130,6 @@ def groups_handler():
                                 groups.update_json(current_groups)
                                 add_another_channel_choice = str(input("\nAdd another channel? [y/N]\n>:"))
                                 if add_another_channel_choice not in affirmative_choice:
-                                    clear()
                                     break
                             else:
                                 break
