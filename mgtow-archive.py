@@ -24,6 +24,7 @@ import tty
 import termios
 from fnmatch import fnmatch
 import base64
+from datetime import datetime
 
 import youtube_dl
 from colorama import Fore, init
@@ -349,7 +350,8 @@ class CreateTorrent:
 
     def make(self, path, trackers, save_torrent_path, piece_size=None):
         torrent = Torrent(path=path, trackers=trackers, piece_size=piece_size, exclude=self.exclude,
-                          source=self.source_str, comment=self.comment_str, created_by=self.created_by_str)
+                          source=self.source_str, comment=self.comment_str, created_by=self.created_by_str,
+                          creation_date=datetime.now())
         torrent.generate()
         with open(save_torrent_path, 'wb') as file:
             torrent.save(file)
