@@ -225,7 +225,7 @@ class Compress:
 
 class Format:
     def __init__(self):
-        self.format_config = config_dir + "format_config.json"
+        self.format_config_path = config_dir + "format_config.json"
         self.formats = {
             "mp4": "mp4[height=720]/mp4[height<720]/mp4",
             "mp3": "mp3",
@@ -236,31 +236,31 @@ class Format:
     def get_format(self, raw=False):
         if raw:
             try:
-                return Json.decode(self.format_config, return_content=True)
+                return Json.decode(self.format_config_path, return_content=True)
             except FileNotFoundError:
                 self.default_format()
         elif not raw:
             try:
-                current_format = Json.decode(self.format_config, return_content=True)
+                current_format = Json.decode(self.format_config_path, return_content=True)
                 return list(self.formats.keys())[list(self.formats.values()).index(current_format)]
             except FileNotFoundError:
                 self.default_format()
 
     def default_format(self):
-        Json.encode("mp4[height=720]/mp4[height<720]/mp4", self.format_config)
+        Json.encode("mp4[height=720]/mp4[height<720]/mp4", self.format_config_path)
         self.get_format()
 
     def mp4(self):
-        Json.encode(self.formats["mp4"], self.format_config)
+        Json.encode(self.formats["mp4"], self.format_config_path)
 
     def mp3(self):
-        Json.encode(self.formats["mp3"], self.format_config)
+        Json.encode(self.formats["mp3"], self.format_config_path)
 
     def bestaudio(self):
-        Json.encode(self.formats["bestaudio"], self.format_config)
+        Json.encode(self.formats["bestaudio"], self.format_config_path)
 
     def best(self):
-        Json.encode(self.formats["best"], self.format_config)
+        Json.encode(self.formats["best"], self.format_config_path)
 
 
 class Base64:
@@ -282,7 +282,7 @@ class Base64:
 class CreateTorrent:
     class Trackers:
         def __init__(self):
-            self.trackers_json_path = config_dir + "trackers.json"
+            self.trackers_config_path = config_dir + "trackers.json"
 
         def make_default(self):
             default_trackers = [
@@ -329,17 +329,17 @@ class CreateTorrent:
                 "udp://home.penza.com.ru:6969/announce",
                 "udp://tracker.dyn.im:6969/announce",
                 ]
-            return Json.encode(default_trackers, self.trackers_json_path)
+            return Json.encode(default_trackers, self.trackers_config_path)
 
         def get(self):
             try:
-                return Json.decode(self.trackers_json_path, return_content=True)
+                return Json.decode(self.trackers_config_path, return_content=True)
             except FileNotFoundError:
                 self.make_default()
                 return self.get()
 
         def update(self, new_list):
-            return Json.encode(new_list, self.trackers_json_path)
+            return Json.encode(new_list, self.trackers_config_path)
 
     def __init__(self):
         self.source_str = "mgtow-archive"
@@ -418,6 +418,35 @@ class Qbittorrent:
     def add_mgtow_torrent(self, torrent_file=None):
         return self.client_instance.torrents_add(torrent_files=torrent_file, category="mgtow-archive",
                                                  save_path=download_path)
+
+
+class Groups:
+
+    def __init__(self):
+        self.groups_config_path = config_dir + "groups.json"
+        if not os.path.exists(self.groups_config_path):
+            Json.encode([], self.groups_config_path)
+        self.current = self.get()
+
+    def get(self):
+        return Json.decode(self.groups_config_path, return_content=True)
+
+    def update_json(self, new_config):
+        Json.encode(new_config, self.groups_config_path)
+        return self.get()
+
+    def add(self, name):
+        default_attr = {
+            "name":         name,
+            "format":       "",
+            "channels":     [],
+        }
+        self.current.append(default_attr)
+        return self.update_json(self.current)
+
+    def remove(self, list_item):
+        self.current.pop(list_item)
+        return self.update_json(self.current)
 
 
 def clear():
@@ -503,7 +532,9 @@ def show_menu():
           color.red(color.bold("|")) + "  " + color.yellow(color.bold("conf")) + ") General configuration")
     print(color.yellow(color.bold("2")) + ") Channels                         " +
           color.red(color.bold("|")) + "  ")
-    print(color.yellow(color.bold("3")) + ") qBittorrent interface (v4.1+)    " +
+    print(color.yellow(color.bold("3")) + ") Groups                           " +
+          color.red(color.bold("|")) + "  ")
+    print(color.yellow(color.bold("4")) + ") qBittorrent interface (v4.1+)    " +
           color.red(color.bold("|")) + "  ")
     print(color.yellow(color.bold("0")) + ") Exit                             " +
           color.red(color.bold("|")) + "  ")
@@ -720,9 +751,7 @@ def config_handler():
     this is pretty much straight forward and should be easy to read (ignore color calls)
     :return:  depends i guess :p
     """
-    config_maintainer = True
-
-    while config_maintainer:
+    while True:
         clear()
         print(color.red(color.bold("------------------------CONFIGURATION-----------------------")))
         print(color.red(color.bold("Changes to the download config must be done on the source code.")))
@@ -872,9 +901,7 @@ def channels_choice():
     user interface for channels stuff
     :return:
     """
-    channel_maintainer = True
-
-    while channel_maintainer:
+    while True:
         clear()
         print(color.red(color.bold("--------------------------CHANNELS--------------------------")))
         print(color.yellow(color.bold("1")) + ") Search for new videos in every channel")
@@ -961,9 +988,7 @@ def channels_choice():
             wait_input()
 
         elif channel_choice == 3:
-            add_channel_maintainer = True
-
-            while add_channel_maintainer:
+            while True:
                 clear()
                 print(color.red(color.bold("-------------------------ADD-CHANNEL------------------------")))
                 print(color.yellow(color.bold("Leave everything blank to cancel.\n")))
@@ -981,9 +1006,121 @@ def channels_choice():
                     break
 
 
+def groups_handler():
+    while True:
+        clear()
+        print(color.red(color.bold("---------------------------GROUPS---------------------------")))
+        print(color.yellow(color.bold("use")) + ") Select a group")
+        print(color.yellow(color.bold("add")) + ") Add a new group")
+        print(color.yellow(color.bold("del")) + ") Delete a group")
+        print(enter_to_return())
+        groups_choice = str(input(">:"))
+
+        groups.get()
+
+        if groups_choice == "":
+            break
+
+        elif groups_choice == "use":
+            while True:
+                clear()
+                print(color.red(color.bold("------------------------SELECT-GROUP------------------------")))
+                current_groups = groups.get()
+                if len(current_groups) == 0:
+                    print("No groups where found.")
+                    wait_input()
+                    break
+                else:
+                    group_count = 0
+                    for group in current_groups:
+                        group_count += 1
+                        print("     %s) %s\n"
+                              % (color.yellow(color.bold(str(group_count))), group["name"]))
+                    print("Type the number of the group to be selected.")
+                    print(enter_to_return())
+                    selected_group = input(">:")
+                    if selected_group == "":
+                        break
+                    else:
+                        try:
+                            used_group = int(selected_group) - 1
+                            current_group = current_groups[used_group]
+                            while True:
+                                clear()
+                                print(color.red(
+                                    color.bold("------------------------GROUP-IN-USE------------------------")))
+                                print("Name: %s" % current_group["name"])
+                                wait_input()
+                                # TODO print name, channels, format, put options to download, add channel,
+                                #  change format, change name, etc.
+                        except ValueError:
+                            clear()
+                            print("Only numbers are accepted.")
+                            wait_input()
+                        except IndexError:
+                            clear()
+                            print("Number selected does not correspond to any group.")
+                            wait_input()
+
+        elif groups_choice == "add":
+            while True:
+                clear()
+                print(color.red(color.bold("--------------------------ADD-GROUP-------------------------")))
+                print("Type the name of the new group.")
+                print(enter_to_return())
+                group_name = str(input(">:"))
+                if group_name == "":
+                    break
+                else:
+                    groups.add(group_name)
+
+        elif groups_choice == "del":
+            while True:
+                clear()
+                print(color.red(color.bold("------------------------DELETE-GROUP------------------------")))
+                current_groups = groups.get()
+                if len(current_groups) == 0:
+                    print("No groups where found.")
+                    wait_input()
+                    break
+                else:
+                    print("Use '@ALL' to delete all groups %s\n" % color.yellow(color.bold("[CAUTION]")))
+                    group_count = 0
+                    for group in current_groups:
+                        group_count += 1
+                        print("     %s) %s\n"
+                              % (color.yellow(color.bold(str(group_count))), group["name"]))
+                    print("Type the number of the group to be deleted.")
+                    print(enter_to_return())
+                    removed_group = input(">:")
+                    if removed_group == "":
+                        break
+                    elif removed_group == "@ALL":
+                        clear()
+                        sure = str(input("Delete all groups selected. Proceed? [y/N]"))
+                        if sure in affirmative_choice:
+                            groups.update_json([])
+                            break
+                    else:
+                        try:
+                            deleted_group = int(removed_group) - 1
+                            groups.remove(deleted_group)
+                        except ValueError:
+                            clear()
+                            print("Only numbers are accepted.")
+                            wait_input()
+                        except IndexError:
+                            clear()
+                            print("Number selected does not correspond to any group.")
+                            wait_input()
+
+        else:
+            clear()
+            wait_input()
+
+
 def torrent_handler():
-    torrent_maintainer = True
-    while torrent_maintainer:
+    while True:
         clear()
         print(color.red(color.bold("----------------------TORRENT-INTERFACE---------------------")))
         print("Login status: %s" % color.green(color.bold("Successful  |  Client Version: %s"
@@ -1255,14 +1392,15 @@ def torrent_handler():
                     while True:
                         clear()
                         print(color.red(color.bold("-----------------------REMOVE-TRACKERS----------------------")))
-                        print(enter_to_return())
+
                         old_trackers = create_torrent.Trackers().get()
                         tracker_count = 0
                         for tracker in old_trackers:
                             tracker_count += 1
                             print("     %s) %s" % (color.yellow(color.bold(str(tracker_count))), tracker))
 
-                        remove_tracker = input("Type the number to be deleted.\n>:")
+                        remove_tracker = input("Type the number of the tracker to be deleted.\n>:")
+                        print(enter_to_return())
                         if remove_tracker == "":
                             break
                         try:
@@ -1299,12 +1437,12 @@ if __name__ == "__main__":
     create_torrent = CreateTorrent()
     qbittorrent = Qbittorrent()
     compress = Compress()
+    groups = Groups()
 
     get_config_dir()
     get_path()
 
-    maintainer = True
-    while maintainer:
+    while True:
         clear()
         show_menu()  # show menu
         choice = input(">:")  # wait for user input
@@ -1334,6 +1472,9 @@ if __name__ == "__main__":
             channels_choice()
 
         elif choice == 3:
+            groups_handler()
+
+        elif choice == 4:
             torrent_handler()
 
         elif choice == 0:
