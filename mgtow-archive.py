@@ -6,13 +6,9 @@
 #  ╚═╝     ╚═╝ ╚═════╝   ╚═╝    ╚═════╝  ╚══╝╚══╝     ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝
 # https://github.com/PhoenixK7PB/mgtow-archive
 #
-# TODO: add options to edit, remove and download specific channels
 # TODO: compressing system
 # TODO: move all config files to a single file
 # TODO: re-make README.md
-# TODO: make interface for tracker to be added on the torrent
-# TODO: make a read.me on the channel directory before starting the torrent,
-#  the content should have the project name, date, etc
 # TODO: make a list of all possible bit sizes for the user to choose from
 
 # import tarfile
@@ -247,7 +243,7 @@ class Format:
                 self.default_format()
 
     def default_format(self):
-        Json.encode("mp4[height=720]/mp4[height<720]/mp4", self.format_config_path)
+        Json.encode(self.formats["mp4"], self.format_config_path)
         self.get_format()
 
     def mp4(self):
@@ -261,6 +257,46 @@ class Format:
 
     def best(self):
         Json.encode(self.formats["best"], self.format_config_path)
+
+    def format_handler(self):
+        while True:
+            clear()
+            print(color.red(color.bold("-----------------------DOWNLOAD-FORMAT----------------------")))
+            current_format = self.get_format()
+
+            print(color.yellow(color.bold("1)")) + "    (" + color.red(color.bold("X")) + ") MP4") \
+                if current_format == "mp4" else print(color.yellow(color.bold("1)")) + "    ( ) MP4")
+
+            print(color.yellow(color.bold("2)")) + "    (" + color.red(color.bold("X")) + ") MP3") \
+                if current_format == "mp3" else print(color.yellow(color.bold("2)")) + "    ( ) MP3")
+
+            print(color.yellow(color.bold("3)")) + "    (" + color.red(color.bold("X")) +
+                  ") Best audio only format available") \
+                if current_format == "bestaudio" else print(color.yellow(color.bold("3)")) +
+                                                            "    ( ) Best audio only format available")
+            print(color.yellow(color.bold("4)")) + "    (" + color.red(color.bold("X")) + ") Best format available") \
+                if current_format == "best" else print(color.yellow(color.bold("4)")) + "    ( ) Best format available")
+
+            print(enter_to_return())
+            format_choice = str(input(">:"))
+
+            if format_choice == "":
+                break
+            elif format_choice == "1":
+                self.mp4()
+                self.get_format()
+            elif format_choice == "2":
+                self.mp3()
+                self.get_format()
+            elif format_choice == "3":
+                self.bestaudio()
+                self.get_format()
+            elif format_choice == "4":
+                self.best()
+                self.get_format()
+            else:
+                clear()
+                wait_input()
 
 
 class Base64:
@@ -438,9 +474,11 @@ class Groups:
     def add(self, name):
         default_attr = {
             "name":             name,
-            "format":           "",
+            "format":           "",                                                 # TODO
             "channels":         {},
             "create_time":      str(datetime.now().replace(microsecond=0)),
+            "path":             download_path,                                      # TODO
+            "download_archive": youtube_config["download_archive"]                  # TODO
         }
         self.current.append(default_attr)
         return self.update_json(self.current)
@@ -531,11 +569,9 @@ def show_menu():
     print("                 by " + color.red(color.bold("PhoenixK7PB")))
     print(color.yellow(color.bold("1")) + ") Download video/playlist/channel  " +
           color.red(color.bold("|")) + "  " + color.yellow(color.bold("conf")) + ") General configuration")
-    print(color.yellow(color.bold("2")) + ") Channels                         " +
+    print(color.yellow(color.bold("2")) + ") Groups                           " +
           color.red(color.bold("|")) + "  ")
-    print(color.yellow(color.bold("3")) + ") Groups                           " +
-          color.red(color.bold("|")) + "  ")
-    print(color.yellow(color.bold("4")) + ") qBittorrent interface (v4.1+)    " +
+    print(color.yellow(color.bold("3")) + ") qBittorrent interface (v4.1+)    " +
           color.red(color.bold("|")) + "  ")
     print(color.yellow(color.bold("0")) + ") Exit                             " +
           color.red(color.bold("|")) + "  ")
@@ -694,58 +730,6 @@ def set_sorting_type():
     wait_input()
 
 
-def set_format():
-    while True:
-        clear()
-        print(color.red(color.bold("-----------------------DOWNLOAD-FORMAT----------------------")))
-        current_format = download_format.get_format()
-
-        if current_format == "mp4":
-            print(color.yellow(color.bold("1)")) + "    (" + color.red(color.bold("X")) + ") MP4")
-        else:
-            print(color.yellow(color.bold("1)")) + "    ( ) MP4")
-
-        if current_format == "mp3":
-            print(color.yellow(color.bold("2)")) + "    (" + color.red(color.bold("X")) + ") MP3")
-        else:
-            print(color.yellow(color.bold("2)")) + "    ( ) MP3")
-
-        if current_format == "bestaudio":
-            print(color.yellow(color.bold("3)")) + "    (" +
-                  color.red(color.bold("X")) + ") Best audio only format avaliable")
-        else:
-            print(color.yellow(color.bold("3)")) +
-                  "    ( ) Best audio only format avaliable")
-
-        if current_format == "best":
-            print(color.yellow(color.bold("4)")) + "    (" +
-                  color.red(color.bold("X")) + ") Best format avaliable")
-        else:
-            print(color.yellow(color.bold("4)")) +
-                  "    ( ) Best format avaliable")
-
-        print(enter_to_return())
-        format_choice = str(input(">:"))
-
-        if format_choice.lower() == "":
-            break
-        elif format_choice.lower() == "1":
-            download_format.mp4()
-            download_format.get_format()
-        elif format_choice.lower() == "2":
-            download_format.mp3()
-            download_format.get_format()
-        elif format_choice.lower() == "3":
-            download_format.bestaudio()
-            download_format.get_format()
-        elif format_choice.lower() == "4":
-            download_format.best()
-            download_format.get_format()
-        else:
-            clear()
-            wait_input()
-
-
 def config_handler():
     """
     this function is used to handle pretty much all configuration process on the program,
@@ -785,50 +769,13 @@ def config_handler():
             continue
 
         elif config_choice.lower() == "format":
-            set_format()
+            download_format.format_handler()
             continue
 
         else:
             clear()
             wait_input()
 
-
-def get_channels():
-    """
-    decode the JSON file containing the channels, if no JSON is found, return False
-    :return: make a global called channels (dict) containing all channels on the JSON file,
-    the dict data is NAME : URL
-    """
-    try:
-        global channels
-        channels = Json.decode(config_dir + "channels.json", return_content=True)
-
-    except FileNotFoundError:
-        clear()
-        print(color.red(color.bold("----------------------------ERROR---------------------------")))
-        print("No channels founded... maybe add one?")
-        wait_input()
-        return False
-
-
-def add_channel(channel_name, channel_url):
-    """
-    add a channel to a JSON file on a dict like obj
-    NAME : URL
-    :param channel_name: channel name
-    :param channel_url: channel url
-    :return:  calls get_channels()
-    """
-    try:
-        old_channels = Json.decode(config_dir + "channels.json", return_content=True)
-        old_channels[channel_name] = channel_url
-        Json.encode(old_channels, config_dir + "channels.json")
-        get_channels()
-
-    except FileNotFoundError:
-        new_channel = {channel_name: channel_url}
-        Json.encode(new_channel, config_dir + "channels.json")
-        get_channels()
 
 
 def youtube_download(url):
@@ -897,116 +844,6 @@ def download_choice():
     wait_input()
 
 
-def channels_choice():
-    """
-    user interface for channels stuff
-    :return:
-    """
-    while True:
-        clear()
-        print(color.red(color.bold("--------------------------CHANNELS--------------------------")))
-        print(color.yellow(color.bold("1")) + ") Search for new videos in every channel")
-        print(color.yellow(color.bold("2")) + ") View channels")
-        print(color.yellow(color.bold("3")) + ") Add a channel")
-        print(enter_to_return())
-        channel_choice = input(">:")
-
-        try:
-            channel_choice = int(channel_choice)
-
-        except ValueError:
-            if channel_choice.lower() == "":
-                break
-            else:
-                clear()
-                wait_input()
-
-        if channel_choice == 1:
-            clear()
-            print(color.red(color.bold("----------------------DOWNLOAD-CHANNELS---------------------")))
-            if get_channels() is False:
-                continue
-
-            print(color.yellow(color.bold("Found ")) +
-                  color.red(color.bold(str(len(channels)) + " channels")) +
-                  color.yellow(color.bold("...\n")))
-            download_channels_choice = str(input(color.red(color.bold("All videos")) +
-                                                 color.yellow(color.bold(" from ")) +
-                                                 color.red(color.bold("all channels")) +
-                                                 color.yellow(color.bold(" will be downloaded.")) +
-                                                 color.yellow(color.bold("\nProceed? [y/N]")) +
-                                                 "\n>:"))
-
-            if download_channels_choice not in affirmative_choice:
-                clear()
-                continue
-
-            clear()
-            print(color.yellow(color.bold("CTRL + C")) +
-                  " to cancel download.\n")
-            sleep(0.5)
-
-            channel_count = 0
-            for channel in channels:
-                channel_count += 1
-                print()
-                print("     Channel %d of %d" % (channel_count, len(channels)))
-                print("     Channel: %s" % channel)
-                print("     URL: %s" % channels[channel])
-                print()
-                sleep(0.25)
-                youtube_download(channels[channel])
-
-            if warnings >= 1:
-                print("\n   Download fished with %d warnings..." % warnings)
-            if len(errors) >= 1:
-                print(color.red(color.bold("\n   Download fished with %s errors..." % str(len(errors)))))
-                for error in errors:
-                    print(color.red(color.bold(error)))
-
-            if organizer.get_sort_type() == "sort_by_type":
-                print(color.yellow(color.bold("\n Applying sorting type...")))
-                organizer.sort_by_type(download_path)
-                print(color.yellow(color.bold(" DONE!")))
-
-            print()
-            wait_input()
-
-        elif channel_choice == 2:
-            clear()
-            if get_channels() is False:
-                continue
-
-            print(color.red(color.bold("------------------------VIEW-CHANNELS-----------------------")))
-            print("Found %s channel(s)\n" % color.yellow(color.bold(str(len(channels)))))
-            count = 0
-
-            for channel in channels:
-                count += 1
-                print("      %s) Name: %s\n"
-                      "         URL:  %s" % (color.yellow(color.bold(str(count))), channel, channels[channel]))
-                print()
-            wait_input()
-
-        elif channel_choice == 3:
-            while True:
-                clear()
-                print(color.red(color.bold("-------------------------ADD-CHANNEL------------------------")))
-                print(color.yellow(color.bold("Leave everything blank to cancel.\n")))
-                channel_name = str(input(color.yellow(color.bold("Name")) + " of the channel?\n>:"))
-                channel_url = str(input(color.yellow(color.bold("\nLink")) + " of the channel?\n>:"))
-                if channel_name and channel_url != "":
-                    add_channel(channel_name, channel_url)
-                else:
-                    clear()
-                    break
-
-                add_another_channel_choice = str(input("\nAdd another channel? [y/N]\n>:"))
-                if add_another_channel_choice not in affirmative_choice:
-                    clear()
-                    break
-
-
 def groups_handler():
     while True:
         clear()
@@ -1042,7 +879,6 @@ def groups_handler():
                 selected_group = input(">:")
                 if selected_group == "":
                     break
-
                 try:
                     used_group = int(selected_group) - 1
                     if used_group < 0:
@@ -1058,7 +894,6 @@ def groups_handler():
                     print("Number selected does not correspond to any group.")
                     wait_input()
                     continue
-
                 while True:
                     clear()
                     print(color.red(
@@ -1078,9 +913,48 @@ def groups_handler():
                     if group_action == "":
                         break
                     elif group_action == "1":
-                        while True:
-                            clear()
-                            print(color.red(color.bold("-----------------------DOWNLOAD-GROUP-----------------------")))
+                        clear()
+                        print(color.red(color.bold("-----------------------DOWNLOAD-GROUP-----------------------")))
+                        if len(current_group["channels"]) == 0:
+                            print("No channel was found to be downloaded")
+                            wait_input()
+                            continue
+
+                        print(color.yellow(color.bold(str(len(current_group["channels"])))) +
+                              " channel(s) will be downloaded. " +
+                              color.yellow(color.bold("Proceed? [y/N]")))
+                        download_channels_choice = str(input(">:"))
+                        if download_channels_choice not in affirmative_choice:
+                            continue
+                        clear()
+                        print(color.yellow(color.bold("CTRL + C")) + " to cancel download.")
+                        sleep(0.5)
+                        channel_count = 0
+                        for channel in current_group["channels"]:
+                            channel_count += 1
+                            print("     \nChannel %d of %d" % (channel_count, len(current_group["channels"])))
+                            print("     Channel: %s" % channel)
+                            print("     URL: %s" % current_group["channels"][channel])
+                            print()
+                            sleep(0.25)
+                            youtube_download(current_group["channels"][channel])
+
+                        if warnings >= 1:
+                            print("\n   Download fished with %d warnings..." % warnings)
+                        if len(errors) >= 1:
+                            print(color.red(color.bold("\n   Download fished with %s errors..." % str(len(errors)))))
+                            for error in errors:
+                                print(color.red(color.bold(error)))
+
+                        if organizer.get_sort_type() == "sort_by_type":
+                            print(color.yellow(color.bold("\n Applying sorting type...")))
+                            organizer.sort_by_type(download_path)
+                            print(color.yellow(color.bold(" DONE!")))
+
+                        print()
+                        wait_input()
+                        return
+
                     elif group_action == "2":
                         while True:
                             clear()
@@ -1093,7 +967,6 @@ def groups_handler():
                                 groups.update_json(current_groups)
                                 add_another_channel_choice = str(input("\nAdd another channel? [y/N]\n>:"))
                                 if add_another_channel_choice not in affirmative_choice:
-                                    clear()
                                     break
                             else:
                                 break
@@ -1529,6 +1402,7 @@ def torrent_handler():
             clear()
             wait_input()
 
+
 if __name__ == "__main__":
     init(autoreset=True)
     signal.signal(signal.SIGINT, signal_handler)
@@ -1572,12 +1446,9 @@ if __name__ == "__main__":
             download_choice()
 
         elif choice == 2:
-            channels_choice()
-
-        elif choice == 3:
             groups_handler()
 
-        elif choice == 4:
+        elif choice == 3:
             torrent_handler()
 
         elif choice == 0:
