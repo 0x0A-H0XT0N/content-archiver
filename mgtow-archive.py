@@ -531,11 +531,9 @@ def show_menu():
     print("                 by " + color.red(color.bold("PhoenixK7PB")))
     print(color.yellow(color.bold("1")) + ") Download video/playlist/channel  " +
           color.red(color.bold("|")) + "  " + color.yellow(color.bold("conf")) + ") General configuration")
-    print(color.yellow(color.bold("2")) + ") Channels                         " +
+    print(color.yellow(color.bold("2")) + ") Groups                           " +
           color.red(color.bold("|")) + "  ")
-    print(color.yellow(color.bold("3")) + ") Groups                           " +
-          color.red(color.bold("|")) + "  ")
-    print(color.yellow(color.bold("4")) + ") qBittorrent interface (v4.1+)    " +
+    print(color.yellow(color.bold("3")) + ") qBittorrent interface (v4.1+)    " +
           color.red(color.bold("|")) + "  ")
     print(color.yellow(color.bold("0")) + ") Exit                             " +
           color.red(color.bold("|")) + "  ")
@@ -793,43 +791,6 @@ def config_handler():
             wait_input()
 
 
-def get_channels():
-    """
-    decode the JSON file containing the channels, if no JSON is found, return False
-    :return: make a global called channels (dict) containing all channels on the JSON file,
-    the dict data is NAME : URL
-    """
-    try:
-        global channels
-        channels = Json.decode(config_dir + "channels.json", return_content=True)
-
-    except FileNotFoundError:
-        clear()
-        print(color.red(color.bold("----------------------------ERROR---------------------------")))
-        print("No channels founded... maybe add one?")
-        wait_input()
-        return False
-
-
-def add_channel(channel_name, channel_url):
-    """
-    add a channel to a JSON file on a dict like obj
-    NAME : URL
-    :param channel_name: channel name
-    :param channel_url: channel url
-    :return:  calls get_channels()
-    """
-    try:
-        old_channels = Json.decode(config_dir + "channels.json", return_content=True)
-        old_channels[channel_name] = channel_url
-        Json.encode(old_channels, config_dir + "channels.json")
-        get_channels()
-
-    except FileNotFoundError:
-        new_channel = {channel_name: channel_url}
-        Json.encode(new_channel, config_dir + "channels.json")
-        get_channels()
-
 
 def youtube_download(url):
     """
@@ -895,116 +856,6 @@ def download_choice():
 
     print()
     wait_input()
-
-
-def channels_choice():
-    """
-    user interface for channels stuff
-    :return:
-    """
-    while True:
-        clear()
-        print(color.red(color.bold("--------------------------CHANNELS--------------------------")))
-        print(color.yellow(color.bold("1")) + ") Search for new videos in every channel")
-        print(color.yellow(color.bold("2")) + ") View channels")
-        print(color.yellow(color.bold("3")) + ") Add a channel")
-        print(enter_to_return())
-        channel_choice = input(">:")
-
-        try:
-            channel_choice = int(channel_choice)
-
-        except ValueError:
-            if channel_choice.lower() == "":
-                break
-            else:
-                clear()
-                wait_input()
-
-        if channel_choice == 1:
-            clear()
-            print(color.red(color.bold("----------------------DOWNLOAD-CHANNELS---------------------")))
-            if get_channels() is False:
-                continue
-
-            print(color.yellow(color.bold("Found ")) +
-                  color.red(color.bold(str(len(channels)) + " channels")) +
-                  color.yellow(color.bold("...\n")))
-            download_channels_choice = str(input(color.red(color.bold("All videos")) +
-                                                 color.yellow(color.bold(" from ")) +
-                                                 color.red(color.bold("all channels")) +
-                                                 color.yellow(color.bold(" will be downloaded.")) +
-                                                 color.yellow(color.bold("\nProceed? [y/N]")) +
-                                                 "\n>:"))
-
-            if download_channels_choice not in affirmative_choice:
-                clear()
-                continue
-
-            clear()
-            print(color.yellow(color.bold("CTRL + C")) +
-                  " to cancel download.\n")
-            sleep(0.5)
-
-            channel_count = 0
-            for channel in channels:
-                channel_count += 1
-                print()
-                print("     Channel %d of %d" % (channel_count, len(channels)))
-                print("     Channel: %s" % channel)
-                print("     URL: %s" % channels[channel])
-                print()
-                sleep(0.25)
-                youtube_download(channels[channel])
-
-            if warnings >= 1:
-                print("\n   Download fished with %d warnings..." % warnings)
-            if len(errors) >= 1:
-                print(color.red(color.bold("\n   Download fished with %s errors..." % str(len(errors)))))
-                for error in errors:
-                    print(color.red(color.bold(error)))
-
-            if organizer.get_sort_type() == "sort_by_type":
-                print(color.yellow(color.bold("\n Applying sorting type...")))
-                organizer.sort_by_type(download_path)
-                print(color.yellow(color.bold(" DONE!")))
-
-            print()
-            wait_input()
-
-        elif channel_choice == 2:
-            clear()
-            if get_channels() is False:
-                continue
-
-            print(color.red(color.bold("------------------------VIEW-CHANNELS-----------------------")))
-            print("Found %s channel(s)\n" % color.yellow(color.bold(str(len(channels)))))
-            count = 0
-
-            for channel in channels:
-                count += 1
-                print("      %s) Name: %s\n"
-                      "         URL:  %s" % (color.yellow(color.bold(str(count))), channel, channels[channel]))
-                print()
-            wait_input()
-
-        elif channel_choice == 3:
-            while True:
-                clear()
-                print(color.red(color.bold("-------------------------ADD-CHANNEL------------------------")))
-                print(color.yellow(color.bold("Leave everything blank to cancel.\n")))
-                channel_name = str(input(color.yellow(color.bold("Name")) + " of the channel?\n>:"))
-                channel_url = str(input(color.yellow(color.bold("\nLink")) + " of the channel?\n>:"))
-                if channel_name and channel_url != "":
-                    add_channel(channel_name, channel_url)
-                else:
-                    clear()
-                    break
-
-                add_another_channel_choice = str(input("\nAdd another channel? [y/N]\n>:"))
-                if add_another_channel_choice not in affirmative_choice:
-                    clear()
-                    break
 
 
 def groups_handler():
@@ -1565,6 +1416,7 @@ def torrent_handler():
             clear()
             wait_input()
 
+
 if __name__ == "__main__":
     init(autoreset=True)
     signal.signal(signal.SIGINT, signal_handler)
@@ -1608,12 +1460,9 @@ if __name__ == "__main__":
             download_choice()
 
         elif choice == 2:
-            channels_choice()
-
-        elif choice == 3:
             groups_handler()
 
-        elif choice == 4:
+        elif choice == 3:
             torrent_handler()
 
         elif choice == 0:
