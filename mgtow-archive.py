@@ -243,7 +243,7 @@ class Format:
                 self.default_format()
 
     def default_format(self):
-        Json.encode("mp4[height=720]/mp4[height<720]/mp4", self.format_config_path)
+        Json.encode(self.formats["mp4"], self.format_config_path)
         self.get_format()
 
     def mp4(self):
@@ -257,6 +257,46 @@ class Format:
 
     def best(self):
         Json.encode(self.formats["best"], self.format_config_path)
+
+    def format_handler(self):
+        while True:
+            clear()
+            print(color.red(color.bold("-----------------------DOWNLOAD-FORMAT----------------------")))
+            current_format = self.get_format()
+
+            print(color.yellow(color.bold("1)")) + "    (" + color.red(color.bold("X")) + ") MP4") \
+                if current_format == "mp4" else print(color.yellow(color.bold("1)")) + "    ( ) MP4")
+
+            print(color.yellow(color.bold("2)")) + "    (" + color.red(color.bold("X")) + ") MP3") \
+                if current_format == "mp3" else print(color.yellow(color.bold("2)")) + "    ( ) MP3")
+
+            print(color.yellow(color.bold("3)")) + "    (" + color.red(color.bold("X")) +
+                  ") Best audio only format available") \
+                if current_format == "bestaudio" else print(color.yellow(color.bold("3)")) +
+                                                            "    ( ) Best audio only format available")
+            print(color.yellow(color.bold("4)")) + "    (" + color.red(color.bold("X")) + ") Best format available") \
+                if current_format == "best" else print(color.yellow(color.bold("4)")) + "    ( ) Best format available")
+
+            print(enter_to_return())
+            format_choice = str(input(">:"))
+
+            if format_choice == "":
+                break
+            elif format_choice == "1":
+                self.mp4()
+                self.get_format()
+            elif format_choice == "2":
+                self.mp3()
+                self.get_format()
+            elif format_choice == "3":
+                self.bestaudio()
+                self.get_format()
+            elif format_choice == "4":
+                self.best()
+                self.get_format()
+            else:
+                clear()
+                wait_input()
 
 
 class Base64:
@@ -434,9 +474,11 @@ class Groups:
     def add(self, name):
         default_attr = {
             "name":             name,
-            "format":           "",
+            "format":           "",                                                 # TODO
             "channels":         {},
             "create_time":      str(datetime.now().replace(microsecond=0)),
+            "path":             download_path,                                      # TODO
+            "download_archive": youtube_config["download_archive"]                  # TODO
         }
         self.current.append(default_attr)
         return self.update_json(self.current)
@@ -688,58 +730,6 @@ def set_sorting_type():
     wait_input()
 
 
-def set_format():
-    while True:
-        clear()
-        print(color.red(color.bold("-----------------------DOWNLOAD-FORMAT----------------------")))
-        current_format = download_format.get_format()
-
-        if current_format == "mp4":
-            print(color.yellow(color.bold("1)")) + "    (" + color.red(color.bold("X")) + ") MP4")
-        else:
-            print(color.yellow(color.bold("1)")) + "    ( ) MP4")
-
-        if current_format == "mp3":
-            print(color.yellow(color.bold("2)")) + "    (" + color.red(color.bold("X")) + ") MP3")
-        else:
-            print(color.yellow(color.bold("2)")) + "    ( ) MP3")
-
-        if current_format == "bestaudio":
-            print(color.yellow(color.bold("3)")) + "    (" +
-                  color.red(color.bold("X")) + ") Best audio only format avaliable")
-        else:
-            print(color.yellow(color.bold("3)")) +
-                  "    ( ) Best audio only format avaliable")
-
-        if current_format == "best":
-            print(color.yellow(color.bold("4)")) + "    (" +
-                  color.red(color.bold("X")) + ") Best format avaliable")
-        else:
-            print(color.yellow(color.bold("4)")) +
-                  "    ( ) Best format avaliable")
-
-        print(enter_to_return())
-        format_choice = str(input(">:"))
-
-        if format_choice.lower() == "":
-            break
-        elif format_choice.lower() == "1":
-            download_format.mp4()
-            download_format.get_format()
-        elif format_choice.lower() == "2":
-            download_format.mp3()
-            download_format.get_format()
-        elif format_choice.lower() == "3":
-            download_format.bestaudio()
-            download_format.get_format()
-        elif format_choice.lower() == "4":
-            download_format.best()
-            download_format.get_format()
-        else:
-            clear()
-            wait_input()
-
-
 def config_handler():
     """
     this function is used to handle pretty much all configuration process on the program,
@@ -779,7 +769,7 @@ def config_handler():
             continue
 
         elif config_choice.lower() == "format":
-            set_format()
+            download_format.format_handler()
             continue
 
         else:
