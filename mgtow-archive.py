@@ -6,13 +6,9 @@
 #  ╚═╝     ╚═╝ ╚═════╝   ╚═╝    ╚═════╝  ╚══╝╚══╝     ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝
 # https://github.com/PhoenixK7PB/mgtow-archive
 #
-# TODO: add options to edit, remove and download specific channels
 # TODO: compressing system
 # TODO: move all config files to a single file
 # TODO: re-make README.md
-# TODO: make interface for tracker to be added on the torrent
-# TODO: make a read.me on the channel directory before starting the torrent,
-#  the content should have the project name, date, etc
 # TODO: make a list of all possible bit sizes for the user to choose from
 
 # import tarfile
