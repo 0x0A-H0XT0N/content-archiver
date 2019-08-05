@@ -217,6 +217,7 @@ class Organizer:
 
 
 class YTConfig:
+    # TODO option to turn off download archive and change the config.json file (over MASTER to group local)
     class DownloadPath:
         def get(self):
             """
