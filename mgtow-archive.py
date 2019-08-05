@@ -112,32 +112,34 @@ class Json:
             json.dump(data, write_file)
 
     @staticmethod
-    def decode(read_filename, return_content=False):
+    def decode(read_filename):
         """
         Read a .json file and transfer the data to a global variable
         :param read_filename: Name of the file to be read, NEED the .json at the end
-        :param return_content:  1 (default) for not returning the content inside the json file
-                                0 for returning the content at the end
-        :return: Make a global variable called "json_decode", all content in there
-        If return_content is 1, does NOT return anything
-        If return_content is 0, DOES return the content
+        :return: content decoded
         """
-        global json_decode
-
         with open(read_filename) as json_data:
-            json_decode = json.load(json_data)
+            return json.load(json_data)
 
-            if return_content:
-                return json_decode
+
+class ConfigPath:
+    def __init__(self):
+        self.home = str(Path.home())
+        self.config_path = self.home + "/.config/mgtow-archive/"
+
+    def get(self):
+        if not os.path.exists(self.config_path):  # check if config dir exists
+            os.makedirs(self.config_path)
+        return self.config_path
 
 
 class Organizer:
     def get_sort_type(self):
         try:
-            return Json.decode(config_dir + "sort_type.json", return_content=True)
+            return Json.decode(ConfigPath().get() + "sort_type.json")
         except FileNotFoundError:
             self.sort_by_type(download_path)
-            return Json.decode(config_dir + "sort_type.json", return_content=True)
+            return Json.decode(ConfigPath().get() + "sort_type.json")
 
     def sort_by_type(self, root_path):
         for channel in self.get_downloaded_channels(root_path):
@@ -174,7 +176,7 @@ class Organizer:
                 elif os.path.isdir(absolute_file_path):
                     # handle?
                     pass
-        Json.encode("sort_by_type", config_dir + "sort_type.json")
+        Json.encode("sort_by_type", ConfigPath().get() + "sort_type.json")
 
     def all_in_one(self, root_path):
         for channel in self.get_downloaded_channels(root_path):
@@ -184,7 +186,7 @@ class Organizer:
                     for file in os.listdir(absolute_folder_path):
                         os.rename(absolute_folder_path + "/" + file, channel + "/" + file)
             self.remove_folder_sorted_directories(channel + "/")
-        Json.encode("all_in_one", config_dir + "sort_type.json")
+        Json.encode("all_in_one", ConfigPath().get() + "sort_type.json")
 
     @staticmethod
     def remove_folder_sorted_directories(channel_path):
@@ -214,89 +216,206 @@ class Organizer:
         return downloaded_channels_list
 
 
+class YTConfig:
+    class DownloadPath:
+        def get(self):
+            """
+            Should get a "path" for storing the downloaded content
+            Uses json_handler,
+            If not data could be found, calls make_path()
+            :return: Make a global variable called "path",
+            """
+            try:  # tries to decode path
+                return Json.decode(ConfigPath().get() + "path.json")
+            except FileNotFoundError:  # if the file is not founded, calls make_path() and makes it
+                self.make()
+                return self.get()
+
+        @staticmethod
+        def make():
+            """
+            create a JSON file on the program directory containing the path for downloaded videos,
+            user can use home path
+            """
+
+            clear()
+            print(color.red(color.bold("-------------------------MAKE-PATH--------------------------")))
+            path_name = str(input("Type the " + color.yellow(color.bold("full path")) +
+                                  " for storing downloads...\n" +
+                                  color.yellow(color.bold("Enter")) + " to use your " +
+                                  color.yellow(color.bold("home path")) + "." + "\n>:"))
+
+            if path_name == "":  # if user input is blank,
+                clear()
+                if not os.path.exists(str(Path.home())):  # check if user home exists,
+                    os.makedirs(str(Path.home()))  # if not, create it
+                Json.encode(str(Path.home()) + "/",
+                            ConfigPath().get() + "path.json")
+                # encode JSON file containing the path (home path in this case)
+
+            else:  # if user input is not blank,
+                clear()
+                if not os.path.exists(path_name):  # check if user input path exists
+                    os.makedirs(path_name)  # if not, create it
+                Json.encode(path_name + "/", ConfigPath().get() + "path.json")
+                # encode JSON file containing the user path
+
+            clear()
+            print("The program need to be restarted for the changes take effect. Exiting...")
+            sys.exit(0)
+
+        @staticmethod
+        def set():
+            """
+            option for changing/making new path
+            :return: nothing, just changes path global variable
+            """
+            clear()
+            print(color.red(color.bold("------------------------CHANGE-PATH-------------------------")))
+            print("Your current path is: " + color.yellow(color.bold(download_path)))
+            new_path = str(input("\nType your new path...\n" + enter_to_return() +
+                                 "\n>:"))
+            if new_path == "":  # check user input, if blank, return
+                return
+
+            else:  # else: check, encode, change global variable path and returns
+                if not os.path.exists(new_path):  # checks if new path exists,
+                    os.makedirs(new_path)  # if not, create it,
+                Json.encode(new_path + "/", ConfigPath().get() + "path.json")  # then encode it
+                clear()
+                print("The program need to be restarted for the changes take effect. Exiting.")
+                sys.exit(0)
+
+    class Format:
+        def __init__(self):
+            self.format_config_path = ConfigPath().get() + "format.json"
+            self.formats = {
+                "mp4": "mp4[height=720]/mp4[height<720]/mp4",
+                "mp3": "mp3",
+                "bestaudio": "bestaudio",
+                "best": "best",
+            }
+
+        def get(self, raw=False):
+            if raw:
+                try:
+                    return Json.decode(self.format_config_path)
+                except FileNotFoundError:
+                    self.mp4()
+                    return self.get(raw)
+            elif not raw:
+                try:
+                    current_format = Json.decode(self.format_config_path)
+                    return list(self.formats.keys())[list(self.formats.values()).index(current_format)]
+                except FileNotFoundError:
+                    self.mp4()
+                    return self.get(raw)
+
+        def mp4(self):
+            Json.encode(self.formats["mp4"], self.format_config_path)
+
+        def mp3(self):
+            Json.encode(self.formats["mp3"], self.format_config_path)
+
+        def bestaudio(self):
+            Json.encode(self.formats["bestaudio"], self.format_config_path)
+
+        def best(self):
+            Json.encode(self.formats["best"], self.format_config_path)
+
+        def format_handler(self):
+            while True:
+                clear()
+                print(color.red(color.bold("-----------------------DOWNLOAD-FORMAT----------------------")))
+                current_format = self.get()
+
+                print(color.yellow(color.bold("1)")) + "    (" + color.red(color.bold("X")) + ") MP4") \
+                    if current_format == "mp4" else print(color.yellow(color.bold("1)")) + "    ( ) MP4")
+
+                print(color.yellow(color.bold("2)")) + "    (" + color.red(color.bold("X")) + ") MP3") \
+                    if current_format == "mp3" else print(color.yellow(color.bold("2)")) + "    ( ) MP3")
+
+                print(color.yellow(color.bold("3)")) + "    (" + color.red(color.bold("X")) +
+                      ") Best audio only format available") \
+                    if current_format == "bestaudio" else print(color.yellow(color.bold("3)")) +
+                                                                "    ( ) Best audio only format available")
+                print(color.yellow(color.bold("4)")) + "    (" + color.red(color.bold("X")) + ") Best format available") \
+                    if current_format == "best" else print(
+                    color.yellow(color.bold("4)")) + "    ( ) Best format available")
+
+                print(enter_to_return())
+                format_choice = str(input(">:"))
+
+                if format_choice == "":
+                    break
+                elif format_choice == "1":
+                    self.mp4()
+                    self.get()
+                elif format_choice == "2":
+                    self.mp3()
+                    self.get()
+                elif format_choice == "3":
+                    self.bestaudio()
+                    self.get()
+                elif format_choice == "4":
+                    self.best()
+                    self.get()
+                else:
+                    clear()
+                    wait_input()
+
+    class DownloadArchive:
+        def __init__(self):
+            self.download_path = YTConfig.DownloadPath().get()
+            self.format = YTConfig.Format().get()
+
+        def get(self):
+            return self.download_path + "download_archive_" + self.format
+
+    def __init__(self):
+        self.config_file = ConfigPath().get() + "config.json"
+        # self.config = self.get()
+
+    def get(self):
+        try:
+            config = Json.decode(self.config_file)
+        except FileNotFoundError:
+            self.make_default()
+            config = Json.decode(self.config_file)
+        finally:
+            config['logger'] = Logger()
+            return config
+
+    def make_default(self):
+        youtube_default_config = {
+            # USER DEFINED
+            'download_archive': self.DownloadArchive().get(),
+            'format': YTConfig.Format().get(raw=True),  # Video format code. See yt-dl for more info.
+            'outtmpl': YTConfig.DownloadPath().get() + '/%(uploader)s/%(title)s.%(ext)s',
+            # BOOLs
+            'restrictfilenames': True,
+            'no_warnings': True,
+            'ignoreerrors': True,
+            'nooverwrites': True,
+            'writedescription': True,
+            'writeinfojson': True,
+            'writethumbnail': True,
+            'writeautomaticsub': True,
+            'writeannotations': True,
+            'verbose': False,
+            'quiet': False,
+            'simulate': False,
+            'skip_download': False,
+            'noplaylist': False,
+            'playlistrandom': False,
+            'playlistreverse': False,
+
+        }
+        Json.encode(youtube_default_config, self.config_file)
+
 class Compress:
     # TODO
     pass
-
-
-class Format:
-    def __init__(self):
-        self.format_config_path = config_dir + "format_config.json"
-        self.formats = {
-            "mp4": "mp4[height=720]/mp4[height<720]/mp4",
-            "mp3": "mp3",
-            "bestaudio": "bestaudio",
-            "best": "best",
-        }
-
-    def get_format(self, raw=False):
-        if raw:
-            try:
-                return Json.decode(self.format_config_path, return_content=True)
-            except FileNotFoundError:
-                self.default_format()
-        elif not raw:
-            try:
-                current_format = Json.decode(self.format_config_path, return_content=True)
-                return list(self.formats.keys())[list(self.formats.values()).index(current_format)]
-            except FileNotFoundError:
-                self.default_format()
-
-    def default_format(self):
-        Json.encode(self.formats["mp4"], self.format_config_path)
-        self.get_format()
-
-    def mp4(self):
-        Json.encode(self.formats["mp4"], self.format_config_path)
-
-    def mp3(self):
-        Json.encode(self.formats["mp3"], self.format_config_path)
-
-    def bestaudio(self):
-        Json.encode(self.formats["bestaudio"], self.format_config_path)
-
-    def best(self):
-        Json.encode(self.formats["best"], self.format_config_path)
-
-    def format_handler(self):
-        while True:
-            clear()
-            print(color.red(color.bold("-----------------------DOWNLOAD-FORMAT----------------------")))
-            current_format = self.get_format()
-
-            print(color.yellow(color.bold("1)")) + "    (" + color.red(color.bold("X")) + ") MP4") \
-                if current_format == "mp4" else print(color.yellow(color.bold("1)")) + "    ( ) MP4")
-
-            print(color.yellow(color.bold("2)")) + "    (" + color.red(color.bold("X")) + ") MP3") \
-                if current_format == "mp3" else print(color.yellow(color.bold("2)")) + "    ( ) MP3")
-
-            print(color.yellow(color.bold("3)")) + "    (" + color.red(color.bold("X")) +
-                  ") Best audio only format available") \
-                if current_format == "bestaudio" else print(color.yellow(color.bold("3)")) +
-                                                            "    ( ) Best audio only format available")
-            print(color.yellow(color.bold("4)")) + "    (" + color.red(color.bold("X")) + ") Best format available") \
-                if current_format == "best" else print(color.yellow(color.bold("4)")) + "    ( ) Best format available")
-
-            print(enter_to_return())
-            format_choice = str(input(">:"))
-
-            if format_choice == "":
-                break
-            elif format_choice == "1":
-                self.mp4()
-                self.get_format()
-            elif format_choice == "2":
-                self.mp3()
-                self.get_format()
-            elif format_choice == "3":
-                self.bestaudio()
-                self.get_format()
-            elif format_choice == "4":
-                self.best()
-                self.get_format()
-            else:
-                clear()
-                wait_input()
 
 
 class Base64:
@@ -318,7 +437,7 @@ class Base64:
 class CreateTorrent:
     class Trackers:
         def __init__(self):
-            self.trackers_config_path = config_dir + "trackers.json"
+            self.trackers_config_path = ConfigPath().get() + "trackers.json"
 
         def make_default(self):
             default_trackers = [
@@ -369,7 +488,7 @@ class CreateTorrent:
 
         def get(self):
             try:
-                return Json.decode(self.trackers_config_path, return_content=True)
+                return Json.decode(self.trackers_config_path)
             except FileNotFoundError:
                 self.make_default()
                 return self.get()
@@ -400,7 +519,7 @@ class CreateTorrent:
 
 class Qbittorrent:
     def __init__(self):
-        self.torrent_config_path = config_dir + "torrent_config.json"
+        self.torrent_config_path = ConfigPath().get() + "torrent_config.json"
         self.torrent_config_file = self.get_config()
         self.client_instance = self.get_client_instance()
 
@@ -416,7 +535,7 @@ class Qbittorrent:
 
     def get_config(self):
         try:
-            return Json.decode(self.torrent_config_path, return_content=True)
+            return Json.decode(self.torrent_config_path)
         except FileNotFoundError:
             self.make_default_config()
 
@@ -459,13 +578,13 @@ class Qbittorrent:
 class Groups:
 
     def __init__(self):
-        self.groups_config_path = config_dir + "groups.json"
+        self.groups_config_path = ConfigPath().get() + "groups.json"
         if not os.path.exists(self.groups_config_path):
             Json.encode([], self.groups_config_path)
         self.current = self.get()
 
     def get(self):
-        return Json.decode(self.groups_config_path, return_content=True)
+        return Json.decode(self.groups_config_path)
 
     def update_json(self, new_config):
         Json.encode(new_config, self.groups_config_path)
@@ -473,12 +592,14 @@ class Groups:
 
     def add(self, name):
         default_attr = {
-            "name":             name,
-            "format":           "",                                                 # TODO
-            "channels":         {},
-            "create_time":      str(datetime.now().replace(microsecond=0)),
-            "path":             download_path,                                      # TODO
-            "download_archive": youtube_config["download_archive"]                  # TODO
+            "name":                 name,
+            "channels":             {},
+            "create_time":          str(datetime.now().replace(microsecond=0)),
+            "last_download":        "",
+            "yt-dl_config":         "",
+            "format":               "",                                                 # TODO
+            "path":                 download_path,                                      # TODO
+            "download_archive":     youtube_config["download_archive"]                  # TODO
         }
         self.current.append(default_attr)
         return self.update_json(self.current)
@@ -577,13 +698,6 @@ def show_menu():
           color.red(color.bold("|")) + "  ")
 
 
-def get_config_dir():
-    global config_dir
-    if not os.path.exists(str(Path.home()) + "/.config/mgtow-archive/"):  # check if config dir exists
-        os.makedirs(str(Path.home()) + "/.config/mgtow-archive/")
-    config_dir = str(Path.home()) + "/.config/mgtow-archive/"
-
-
 def get_channel_size(channel_path):
     channel_size = 0
 
@@ -598,65 +712,13 @@ def get_channel_size(channel_path):
     return channel_size
 
 
-def make_path():
-    """
-    create a JSON file on the program directory containing the path for downloaded videos,
-    user can use home path
-    :return: create a global variable called "path" containing the path, returns nothing
-    """
-
-    clear()
-    print(color.red(color.bold("-------------------------MAKE-PATH--------------------------")))
-    path_name = str(input("Type the " + color.yellow(color.bold("full path")) +
-                          " for storing downloads...\n" +
-                          color.yellow(color.bold("Enter")) + " to use your " +
-                          color.yellow(color.bold("home path")) + "." + "\n>:"))
-
-    if path_name == "":  # if user input is blank,
-        clear()
-        if not os.path.exists(str(Path.home())):  # check if user home exists,
-            os.makedirs(str(Path.home()))  # if not, create it
-        Json.encode(str(Path.home() + "/"),
-                    config_dir + "path.json")  # encode JSON file containing the path (home path in this case)
-
-    else:  # if user input is not blank,
-        clear()
-        if not os.path.exists(path_name):  # check if user input path exists
-            os.makedirs(path_name)  # if not, create it
-        Json.encode(path_name + "/", config_dir + "path.json")  # encode JSON file containing the user path
-
-    global download_path
-    download_path = Json.decode(config_dir + "path.json",
-                                return_content=True)  # make a global variable containing the new path
-    clear()
-    print("The application need to be restarted for the changes take effect. Exiting.")
-    sys.exit(0)
-
-
-def get_path():
-    """
-    Should get a "path" for storing the downloaded content
-    Uses json_handler,
-    If not data could be found, calls make_path()
-    :return: Make a global variable called "path",
-    """
-    get_config_dir()
-    try:  # tries to decode path
-        global download_path
-        download_path = Json.decode(config_dir + "path.json", return_content=True)
-        return download_path
-    except FileNotFoundError:  # if the file is not founded, calls make_path() and makes it
-        make_path()
-        return download_path
-
-
 youtube_config = {  # --------------------CHANGE-THIS!!!--------------------- #
 
     'logger': Logger(),  # Logger instance, don't change it!
-    'download_archive': get_path() + '/download_archive',  # Use download archive file, don't change it!
+    'download_archive': YTConfig.DownloadPath().get() + '/download_archive',
 
-    'format': Format().get_format(raw=True),  # Video format code. See yt-dl for more info.
-    'outtmpl': get_path() + '/%(uploader)s/%(title)s.%(ext)s',
+    'format': YTConfig.Format().get(raw=True),  # Video format code. See yt-dl for more info.
+    'outtmpl': YTConfig.DownloadPath().get() + '/%(uploader)s/%(title)s.%(ext)s',
 
     'restrictfilenames': True,  # Do not allow "&" and spaces in file names
     'no_warnings': True,  # Do not print out anything for warnings.
@@ -674,31 +736,15 @@ youtube_config = {  # --------------------CHANGE-THIS!!!--------------------- #
     'noplaylist': False,  # Download single video instead of a playlist if in doubt.
     'playlistrandom': False,  # Download playlist items in random order.
     'playlistreverse': False,  # Download playlist items in reverse order.
+    'forceurl':                 False,              # Force printing final URL.
+    'forcetitle':               False,              # Force printing title.
+    'forceid':                  False,              # Force printing ID.
+    'forcethumbnail':           False,              # Force printing thumbnail URL.
+    'forcedescription':         False,              # Force printing description.
+    'forcefilename':            False,              # Force printing final filename.
+    'forceduration':            False,              # Force printing duration.
+    'forcejson':                False,              # Force printing info_dict as JSON.
 }
-
-
-def set_path():
-    """
-    option for changing/making new path
-    :return: nothing, just changes path global variable
-    """
-    clear()
-    get_path()
-    print(color.red(color.bold("------------------------CHANGE-PATH-------------------------")))
-    print("Your current path is: " + color.yellow(color.bold(download_path)))
-    new_path = str(input("\nType your new path...\n" + enter_to_return() +
-                         "\n>:"))
-    if new_path == "":  # check user input, if blank, return
-        clear()
-        return
-
-    else:  # else: check, encode, change global variable path and returns
-        if not os.path.exists(new_path):  # checks if new path exists,
-            os.makedirs(new_path)  # if not, create it,
-        Json.encode(new_path + "/", config_dir + "path.json")  # then encode it
-        clear()
-        print("The application need to be restarted for the changes take effect. Exiting.")
-        sys.exit(0)
 
 
 def set_compress_type():
@@ -744,7 +790,7 @@ def config_handler():
               "  " + color.yellow(color.bold("NONE")))
 
         print(color.yellow(color.bold("  format")) + ") Set download format     " + color.red(color.bold("|")) +
-              "  " + color.yellow(color.bold(download_format.get_format())))
+              "  " + color.yellow(color.bold(download_format.get())))
 
         print(color.yellow(color.bold("    path")) + ") Set download path       " + color.red(color.bold("|")) +
               "  " + color.yellow(color.bold(download_path)))
@@ -757,7 +803,7 @@ def config_handler():
             break
 
         elif config_choice.lower() == "path":
-            set_path()
+            YTConfig.DownloadPath.set()
             continue
 
         elif config_choice.lower() == "compress":
@@ -777,14 +823,13 @@ def config_handler():
             wait_input()
 
 
-
 def youtube_download(url):
     """
     Download a channel using the config
     :param url: url of the channel being downloaded
     :return: nothing
     """
-    youtube_dl.YoutubeDL(youtube_config).download([url])
+    youtube_dl.YoutubeDL(YTConfig().get()).download([url])
 
 
 def download_choice():
@@ -1249,7 +1294,7 @@ def torrent_handler():
                     print("\nEnter the new IP to the used.")
                     new_ip = str(input(">:"))
                     if new_ip == "":
-                        return
+                        continue
                     else:
                         new_config = qbittorrent.get_config()
                         new_config["ip"] = new_ip
@@ -1263,7 +1308,7 @@ def torrent_handler():
                     print("\nEnter the new port to the used.")
                     new_port = str(input(">:"))
                     if new_port == "":
-                        return
+                        continue
                     else:
                         new_config = qbittorrent.get_config()
                         new_config["port"] = new_port
@@ -1277,7 +1322,7 @@ def torrent_handler():
                     print("\nEnter the new username to the used.")
                     new_username = str(input(">:"))
                     if new_username == "":
-                        return
+                        continue
                     else:
                         new_config = qbittorrent.get_config()
                         new_config["username"] = new_username
@@ -1291,7 +1336,7 @@ def torrent_handler():
                     print("\nEnter the new password to the used.")
                     new_password = str(input(">:"))
                     if new_password == "":
-                        return
+                        continue
                     else:
                         new_config = qbittorrent.get_config()
                         new_config["password"] = Base64.encode64(new_password)
@@ -1305,7 +1350,7 @@ def torrent_handler():
                     if torrent_reset_config_choice in affirmative_choice:
                         qbittorrent.make_default_config()
                     else:
-                        return
+                        continue
 
                 elif change_login_choice == "":
                     break
@@ -1344,7 +1389,7 @@ def torrent_handler():
                     print("Type the new tracker.")
                     new_tracker = str(input(">:"))
                     if new_tracker == "":
-                        return
+                        continue
                     else:
                         new_trackers.append(new_tracker)
                         while True:
@@ -1410,14 +1455,14 @@ if __name__ == "__main__":
     # init instances
     color = Color()
     organizer = Organizer()
-    download_format = Format()
     create_torrent = CreateTorrent()
     qbittorrent = Qbittorrent()
-    compress = Compress()
+    # compress = Compress()
+    download_path = YTConfig.DownloadPath().get()
+    download_format = YTConfig.Format()
     groups = Groups()
 
-    get_config_dir()
-    get_path()
+    YTConfig().make_default()
 
     while True:
         clear()
