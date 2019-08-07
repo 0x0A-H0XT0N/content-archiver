@@ -217,7 +217,6 @@ class Organizer:
 
 
 class YTConfig:
-    # TODO option to turn off download archive and change the config.json file (over MASTER to group local)
     class DownloadPath:
         def get(self):
             """
@@ -373,19 +372,30 @@ class YTConfig:
         def get(self):
             return self.download_path + "download_archive_" + self.format
 
-    def __init__(self):
-        self.config_file = ConfigPath().get() + "config.json"
-        # self.config = self.get()
+    def __init__(self, config_file="master"):
+        if config_file == "master":
+            self.config_file = ConfigPath().get() + "config.json"
+        else:
+            self.config_file = config_file
+        self.config = self.get()
 
-    def get(self):
+    def get(self, dl_archive=True, logger=True):
         try:
             config = Json.decode(self.config_file)
         except FileNotFoundError:
             self.make_default()
             config = Json.decode(self.config_file)
         finally:
-            config['logger'] = Logger()
+            if logger:
+                config['logger'] = Logger()
+            if not dl_archive:
+                del config["download_archive"]
             return config
+
+    def update(self, new_config):
+        if "logger" in new_config.keys():
+            del new_config["logger"]
+        Json.encode(new_config, self.config_file)
 
     def make_default(self):
         youtube_default_config = {
@@ -410,9 +420,9 @@ class YTConfig:
             'noplaylist': False,
             'playlistrandom': False,
             'playlistreverse': False,
-
         }
         Json.encode(youtube_default_config, self.config_file)
+
 
 class Compress:
     # TODO
@@ -864,7 +874,7 @@ def download_choice():
         if use_download_archive in negative_choice:
             global download_archive
             download_archive = False
-            youtube_config.pop("download_archive", None)
+            del youtube_config["download_archive"]
 
     clear()
     print(color.yellow(color.bold("CTRL + C")) +
