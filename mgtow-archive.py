@@ -423,6 +423,8 @@ class YTConfig:
         }
         Json.encode(youtube_default_config, self.config_file)
 
+    def config_handler(self):
+        pass # TODO
 
 class Compress:
     # TODO
@@ -796,9 +798,11 @@ def config_handler():
     while True:
         clear()
         print(color.red(color.bold("------------------------CONFIGURATION-----------------------")))
-        print(color.red(color.bold("Changes to the download config must be done on the source code.")))
         print(color.yellow(color.bold("compress")) + ") Set compress style      " + color.red(color.bold("|")) +
               "  " + color.yellow(color.bold("NONE")))
+
+        print(color.yellow(color.bold("  config")) + ") Set download options    " + color.red(color.bold("|")) +
+              "  " + color.yellow(color.bold("")))
 
         print(color.yellow(color.bold("  format")) + ") Set download format     " + color.red(color.bold("|")) +
               "  " + color.yellow(color.bold(download_format.get())))
@@ -815,6 +819,10 @@ def config_handler():
 
         elif config_choice.lower() == "path":
             YTConfig.DownloadPath.set()
+            continue
+
+        elif config_choice.lower() == "config":
+            # TODO
             continue
 
         elif config_choice.lower() == "compress":
@@ -834,13 +842,14 @@ def config_handler():
             wait_input()
 
 
-def youtube_download(url):
+def youtube_download(url, youtube_config=YTConfig().get()):
     """
     Download a channel using the config
     :param url: url of the channel being downloaded
-    :return: nothing
+    :param youtube_config: yt-dl config dict, get from MASTER if none is provided
+    :return:
     """
-    youtube_dl.YoutubeDL(YTConfig().get()).download([url])
+    youtube_dl.YoutubeDL(youtube_config).download([url])
 
 
 def download_choice():
