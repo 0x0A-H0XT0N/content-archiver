@@ -7,9 +7,13 @@
 # https://github.com/PhoenixK7PB/mgtow-archive
 #
 # TODO: compressing system
-# TODO: move all config files to a single file
 # TODO: re-make README.md
 # TODO: make a list of all possible bit sizes for the user to choose from
+# TODO: add custom format option
+# TODO: add custom bool option
+# TODO: add filters to download option
+# TODO: add option to turn off download_archive
+# TODO: make shortcuts
 
 # import tarfile
 import json
@@ -132,6 +136,19 @@ class ConfigPath:
             os.makedirs(self.config_path)
         return self.config_path
 
+    def init_sub_folders(self):
+        subfolders = [
+            "groups",
+            "torrents",
+            "download_archives"
+        ]
+        if not os.path.exists(self.config_path):  # check if config dir exists
+            os.makedirs(self.config_path)
+        for subfolder in subfolders:
+            subfolder_path = self.config_path + subfolder
+            if not os.path.exists(subfolder_path):
+                os.makedirs(subfolder_path)
+
 
 class Organizer:
     def get_sort_type(self):
@@ -218,6 +235,9 @@ class Organizer:
 
 class YTConfig:
     class DownloadPath:
+        def __init__(self, config_file=ConfigPath().get() + "path.json"):
+            self.config_file = config_file
+
         def get(self):
             """
             Should get a "path" for storing the downloaded content
@@ -226,13 +246,12 @@ class YTConfig:
             :return: Make a global variable called "path",
             """
             try:  # tries to decode path
-                return Json.decode(ConfigPath().get() + "path.json")
+                return Json.decode(self.config_file)
             except FileNotFoundError:  # if the file is not founded, calls make_path() and makes it
                 self.make()
                 return self.get()
 
-        @staticmethod
-        def make():
+        def make(self):
             """
             create a JSON file on the program directory containing the path for downloaded videos,
             user can use home path
@@ -250,22 +269,21 @@ class YTConfig:
                 if not os.path.exists(str(Path.home())):  # check if user home exists,
                     os.makedirs(str(Path.home()))  # if not, create it
                 Json.encode(str(Path.home()) + "/",
-                            ConfigPath().get() + "path.json")
+                            self.config_file)
                 # encode JSON file containing the path (home path in this case)
 
             else:  # if user input is not blank,
                 clear()
                 if not os.path.exists(path_name):  # check if user input path exists
                     os.makedirs(path_name)  # if not, create it
-                Json.encode(path_name + "/", ConfigPath().get() + "path.json")
+                Json.encode(path_name + "/", self.config_file)
                 # encode JSON file containing the user path
 
             clear()
             print("The program need to be restarted for the changes take effect. Exiting...")
             sys.exit(0)
 
-        @staticmethod
-        def set():
+        def set(self):
             """
             option for changing/making new path
             :return: nothing, just changes path global variable
@@ -281,14 +299,16 @@ class YTConfig:
             else:  # else: check, encode, change global variable path and returns
                 if not os.path.exists(new_path):  # checks if new path exists,
                     os.makedirs(new_path)  # if not, create it,
-                Json.encode(new_path + "/", ConfigPath().get() + "path.json")  # then encode it
+                Json.encode(new_path + "/", self.config_file)  # then encode it
                 clear()
                 print("The program need to be restarted for the changes take effect. Exiting.")
                 sys.exit(0)
 
     class Format:
-        def __init__(self):
-            self.format_config_path = ConfigPath().get() + "format.json"
+        def __init__(self, config_file=ConfigPath().get() + "master_config.json"):
+            self.config_file = config_file
+            self.ytconfig = YTConfig(self.config_file)
+            self.current_config = self.ytconfig.get()
             self.formats = {
                 "mp4": "mp4[height=720]/mp4[height<720]/mp4",
                 "mp3": "mp3",
@@ -297,31 +317,17 @@ class YTConfig:
             }
 
         def get(self, raw=False):
-            if raw:
-                try:
-                    return Json.decode(self.format_config_path)
-                except FileNotFoundError:
-                    self.mp4()
-                    return self.get(raw)
-            elif not raw:
-                try:
-                    current_format = Json.decode(self.format_config_path)
-                    return list(self.formats.keys())[list(self.formats.values()).index(current_format)]
-                except FileNotFoundError:
-                    self.mp4()
-                    return self.get(raw)
 
-        def mp4(self):
-            Json.encode(self.formats["mp4"], self.format_config_path)
+            if not raw:
+                return list(self.formats.keys())[list(self.formats.values()).index(self.current_config["format"])]
+            elif raw:
+                return self.current_config["format"]
 
-        def mp3(self):
-            Json.encode(self.formats["mp3"], self.format_config_path)
-
-        def bestaudio(self):
-            Json.encode(self.formats["bestaudio"], self.format_config_path)
-
-        def best(self):
-            Json.encode(self.formats["best"], self.format_config_path)
+        def update_format(self, ext):
+            self.current_config["format"] = ext
+            self.current_config["download_archive"] = self.ytconfig.DownloadArchive().get(
+                ext=list(self.formats.keys())[list(self.formats.values()).index(ext)])
+            self.ytconfig.update(self.current_config)
 
         def format_handler(self):
             while True:
@@ -349,16 +355,16 @@ class YTConfig:
                 if format_choice == "":
                     break
                 elif format_choice == "1":
-                    self.mp4()
+                    self.update_format(self.formats["mp4"])
                     self.get()
                 elif format_choice == "2":
-                    self.mp3()
+                    self.update_format(self.formats["mp3"])
                     self.get()
                 elif format_choice == "3":
-                    self.bestaudio()
+                    self.update_format(self.formats["bestaudio"])
                     self.get()
                 elif format_choice == "4":
-                    self.best()
+                    self.update_format(self.formats["best"])
                     self.get()
                 else:
                     clear()
@@ -366,17 +372,58 @@ class YTConfig:
 
     class DownloadArchive:
         def __init__(self):
-            self.download_path = YTConfig.DownloadPath().get()
+            self.download_archive_path = ConfigPath().get() + "download_archives/"
             self.format = YTConfig.Format().get()
 
-        def get(self):
-            return self.download_path + "download_archive_" + self.format
+        def get(self, ext="auto"):
+            if ext == "auto":
+                return self.download_archive_path + "download_archive_" + self.format
+            else:
+                return self.download_archive_path + "download_archive_" + ext
 
-    def __init__(self, config_file="master"):
-        if config_file == "master":
-            self.config_file = ConfigPath().get() + "config.json"
-        else:
+    class Bool:
+        def __init__(self, config_file=ConfigPath().get() + "master_config.json"):
             self.config_file = config_file
+
+        def bool_handler(self):
+            while True:
+                clear()
+                print(color.red(color.bold("------------------------OTHER-OPTIONS-----------------------")))
+
+                config = YTConfig(self.config_file).get()
+
+                bool_count = 0
+                bool_dict = dict()
+                for option in config:
+                    if not isinstance(config[option], bool):
+                        continue
+                    bool_count += 1
+                    print(color.yellow(color.bold(str(bool_count))) + ") %s : %s" % (option, config[option]))
+                    bool_dict[str(bool_count)] = option
+                print(enter_to_return())
+                bool_choice = str(input(">:"))
+
+                if bool_choice == "":
+                    break
+                elif bool_choice in bool_dict.keys():
+                    bool_value = self.alternate_bool(config[bool_dict[bool_choice]])
+                    config[bool_dict[bool_choice]] = bool_value
+                    YTConfig(self.config_file).update(config)
+                    continue
+                else:
+                    clear()
+                    wait_input()
+                    continue
+
+        @staticmethod
+        def alternate_bool(obj):
+            if obj:
+                return False
+            if not obj:
+                return True
+
+    def __init__(self, config_file=ConfigPath().get() + "master_config.json"):
+        self.config_file = config_file
         self.config = self.get()
 
     def get(self, dl_archive=True, logger=True):
@@ -398,11 +445,12 @@ class YTConfig:
         Json.encode(new_config, self.config_file)
 
     def make_default(self):
+        dl_path = self.DownloadPath().get()
         youtube_default_config = {
             # USER DEFINED
-            'download_archive': self.DownloadArchive().get(),
-            'format': YTConfig.Format().get(raw=True),  # Video format code. See yt-dl for more info.
-            'outtmpl': YTConfig.DownloadPath().get() + '/%(uploader)s/%(title)s.%(ext)s',
+            'download_archive': dl_path + "download_archive_mp4",
+            'format': "mp4[height=720]/mp4[height<720]/mp4",  # Video format code. See yt-dl for more info.
+            'outtmpl': dl_path + '%(uploader)s/%(title)s.%(ext)s',
             # BOOLs
             'restrictfilenames': True,
             'no_warnings': True,
@@ -424,7 +472,30 @@ class YTConfig:
         Json.encode(youtube_default_config, self.config_file)
 
     def config_handler(self):
-        pass # TODO
+        while True:
+            clear()
+            print(color.red(color.bold("----------------------DOWNLOAD-OPTIONS----------------------")))
+            print(color.yellow(color.bold("format")) + ") Set download format     " + color.red(color.bold("|")) +
+                  "  " + color.yellow(color.bold(self.Format(self.config_file).get())))
+            print(color.yellow(color.bold("others")) + ") On or Off options       " + color.red(color.bold("|")) + "  ")
+            print(enter_to_return())
+            download_options_choice = str(input(">:"))
+
+            if download_options_choice == "":
+                return
+            elif download_options_choice == "format":
+                self.Format(self.config_file).format_handler()
+            elif download_options_choice == "others":
+                self.Bool(self.config_file).bool_handler()
+            else:
+                continue
+
+    # def master_popup(self):
+    #     print(color.red(color.bold("You are editing the master download options.\n"
+    #                                "These options will be the default for new groups and for non-group downloads."
+    #                                "This will not effect or overwrite existing group options.")))
+    #     wait_input()
+
 
 class Compress:
     # TODO
@@ -450,7 +521,7 @@ class Base64:
 class CreateTorrent:
     class Trackers:
         def __init__(self):
-            self.trackers_config_path = ConfigPath().get() + "trackers.json"
+            self.trackers_config_path = ConfigPath().get() + "torrents/trackers.json"
 
         def make_default(self):
             default_trackers = [
@@ -524,7 +595,7 @@ class CreateTorrent:
         with open(save_torrent_path, 'wb') as file:
             torrent.save(file)
 
-    def generate_bit_size(self, path, trackers, save_torrent_path, piece_size=None):
+    def generate_bit_size(self, path, trackers, piece_size=None):
         torrent = Torrent(path=path, trackers=trackers, piece_size=piece_size, exclude=self.exclude,
                           source=self.source_str, comment=self.comment_str, created_by=self.created_by_str)
         return torrent.get_info()
@@ -532,7 +603,7 @@ class CreateTorrent:
 
 class Qbittorrent:
     def __init__(self):
-        self.torrent_config_path = ConfigPath().get() + "torrent_config.json"
+        self.torrent_config_path = ConfigPath().get() + "torrents/" + "torrent_config.json"
         self.torrent_config_file = self.get_config()
         self.client_instance = self.get_client_instance()
 
@@ -551,6 +622,7 @@ class Qbittorrent:
             return Json.decode(self.torrent_config_path)
         except FileNotFoundError:
             self.make_default_config()
+            return self.get_config()
 
     def update_config(self, new_config_file):
         return Json.encode(new_config_file, self.torrent_config_path)
@@ -591,7 +663,7 @@ class Qbittorrent:
 class Groups:
 
     def __init__(self):
-        self.groups_config_path = ConfigPath().get() + "groups.json"
+        self.groups_config_path = ConfigPath().get() + "groups/groups.json"
         if not os.path.exists(self.groups_config_path):
             Json.encode([], self.groups_config_path)
         self.current = self.get()
@@ -604,17 +676,17 @@ class Groups:
         return self.get()
 
     def add(self, name):
-        default_attr = {
+        current_time = str(datetime.now().replace(microsecond=0))
+        group_attr = {
             "name":                 name,
             "channels":             {},
-            "create_time":          str(datetime.now().replace(microsecond=0)),
+            "create_time":          current_time,
             "last_download":        "",
-            "yt-dl_config":         "",
-            "format":               "",                                                 # TODO
-            "path":                 download_path,                                      # TODO
-            "download_archive":     youtube_config["download_archive"]                  # TODO
+            "config_path":          ConfigPath().get() + "groups/" + name + "_" +
+                                    current_time.replace(" ", "-").replace(":", "-") + ".config.json"
         }
-        self.current.append(default_attr)
+        self.current.append(group_attr)
+        YTConfig(group_attr["config_path"]).make_default()
         return self.update_json(self.current)
 
     def remove(self, list_item):
@@ -725,39 +797,39 @@ def get_channel_size(channel_path):
     return channel_size
 
 
-youtube_config = {  # --------------------CHANGE-THIS!!!--------------------- #
-
-    'logger': Logger(),  # Logger instance, don't change it!
-    'download_archive': YTConfig.DownloadPath().get() + '/download_archive',
-
-    'format': YTConfig.Format().get(raw=True),  # Video format code. See yt-dl for more info.
-    'outtmpl': YTConfig.DownloadPath().get() + '/%(uploader)s/%(title)s.%(ext)s',
-
-    'restrictfilenames': True,  # Do not allow "&" and spaces in file names
-    'no_warnings': True,  # Do not print out anything for warnings.
-    'ignoreerrors': True,  # Do not stop on download errors.
-    'nooverwrites': True,  # Prevent overwriting files.
-    'writedescription': True,  # Write the video description to a .description file
-    'writeinfojson': True,  # Write metadata to a json file
-    'writethumbnail': True,  # Write the thumbnail image to a file
-    'writeautomaticsub': True,  # Write the automatically generated subtitles to a file
-    'writeannotations': True,  # Write video annotations
-    'verbose': False,  # Print additional info to stdout.
-    'quiet': False,  # Do not print messages to stdout.
-    'simulate': False,  # Do not download the video files.
-    'skip_download': False,  # Skip the actual download of the video file
-    'noplaylist': False,  # Download single video instead of a playlist if in doubt.
-    'playlistrandom': False,  # Download playlist items in random order.
-    'playlistreverse': False,  # Download playlist items in reverse order.
-    'forceurl':                 False,              # Force printing final URL.
-    'forcetitle':               False,              # Force printing title.
-    'forceid':                  False,              # Force printing ID.
-    'forcethumbnail':           False,              # Force printing thumbnail URL.
-    'forcedescription':         False,              # Force printing description.
-    'forcefilename':            False,              # Force printing final filename.
-    'forceduration':            False,              # Force printing duration.
-    'forcejson':                False,              # Force printing info_dict as JSON.
-}
+# youtube_config = {  # --------------------CHANGE-THIS!!!--------------------- #
+#
+#     'logger': Logger(),  # Logger instance, don't change it!
+#     'download_archive': YTConfig.DownloadPath().get() + '/download_archive',
+#
+#     'format': YTConfig.Format().get(raw=True),  # Video format code. See yt-dl for more info.
+#     'outtmpl': YTConfig.DownloadPath().get() + '/%(uploader)s/%(title)s.%(ext)s',
+#
+#     'restrictfilenames': True,  # Do not allow "&" and spaces in file names
+#     'no_warnings': True,  # Do not print out anything for warnings.
+#     'ignoreerrors': True,  # Do not stop on download errors.
+#     'nooverwrites': True,  # Prevent overwriting files.
+#     'writedescription': True,  # Write the video description to a .description file
+#     'writeinfojson': True,  # Write metadata to a json file
+#     'writethumbnail': True,  # Write the thumbnail image to a file
+#     'writeautomaticsub': True,  # Write the automatically generated subtitles to a file
+#     'writeannotations': True,  # Write video annotations
+#     'verbose': False,  # Print additional info to stdout.
+#     'quiet': False,  # Do not print messages to stdout.
+#     'simulate': False,  # Do not download the video files.
+#     'skip_download': False,  # Skip the actual download of the video file
+#     'noplaylist': False,  # Download single video instead of a playlist if in doubt.
+#     'playlistrandom': False,  # Download playlist items in random order.
+#     'playlistreverse': False,  # Download playlist items in reverse order.
+#     'forceurl':                 False,              # Force printing final URL.
+#     'forcetitle':               False,              # Force printing title.
+#     'forceid':                  False,              # Force printing ID.
+#     'forcethumbnail':           False,              # Force printing thumbnail URL.
+#     'forcedescription':         False,              # Force printing description.
+#     'forcefilename':            False,              # Force printing final filename.
+#     'forceduration':            False,              # Force printing duration.
+#     'forcejson':                False,              # Force printing info_dict as JSON.
+# }
 
 
 def set_compress_type():
@@ -798,18 +870,15 @@ def config_handler():
     while True:
         clear()
         print(color.red(color.bold("------------------------CONFIGURATION-----------------------")))
-        print(color.yellow(color.bold("compress")) + ") Set compress style      " + color.red(color.bold("|")) +
-              "  " + color.yellow(color.bold("NONE")))
+        # print(color.yellow(color.bold("compress")) + ") Set compress style      " + color.red(color.bold("|")) +
+        #       "  " + color.yellow(color.bold("NONE")))
 
-        print(color.yellow(color.bold("  config")) + ") Set download options    " + color.red(color.bold("|")) +
+        print(color.yellow(color.bold("config")) + ") Set download options    " + color.red(color.bold("|")) +
               "  " + color.yellow(color.bold("")))
 
-        print(color.yellow(color.bold("  format")) + ") Set download format     " + color.red(color.bold("|")) +
-              "  " + color.yellow(color.bold(download_format.get())))
-
-        print(color.yellow(color.bold("    path")) + ") Set download path       " + color.red(color.bold("|")) +
+        print(color.yellow(color.bold("  path")) + ") Set download path       " + color.red(color.bold("|")) +
               "  " + color.yellow(color.bold(download_path)))
-        print(color.yellow(color.bold("    sort")) + ") Set sorting type        " + color.red(color.bold("|")) +
+        print(color.yellow(color.bold("  sort")) + ") Set sorting type        " + color.red(color.bold("|")) +
               "  " + color.yellow(color.bold(organizer.get_sort_type())))
         print(enter_to_return())
         config_choice = str(input(">:"))  # try to convert choice(str) to choice(int),
@@ -818,23 +887,19 @@ def config_handler():
             break
 
         elif config_choice.lower() == "path":
-            YTConfig.DownloadPath.set()
+            YTConfig.DownloadPath().set()
             continue
 
         elif config_choice.lower() == "config":
-            # TODO
+            ytconfig.config_handler()
             continue
 
-        elif config_choice.lower() == "compress":
-            set_compress_type()
-            continue
+        # elif config_choice.lower() == "compress":
+        #     set_compress_type()
+        #     continue
 
         elif config_choice.lower() == "sort":
             set_sorting_type()
-            continue
-
-        elif config_choice.lower() == "format":
-            download_format.format_handler()
             continue
 
         else:
@@ -842,14 +907,17 @@ def config_handler():
             wait_input()
 
 
-def youtube_download(url, youtube_config=YTConfig().get()):
+def youtube_download(url, youtube_config=None):
     """
     Download a channel using the config
     :param url: url of the channel being downloaded
     :param youtube_config: yt-dl config dict, get from MASTER if none is provided
     :return:
     """
-    youtube_dl.YoutubeDL(youtube_config).download([url])
+    if youtube_config is None:
+        youtube_dl.YoutubeDL(YTConfig().get()).download([url])
+    if youtube_config is not None:
+        youtube_dl.YoutubeDL(youtube_config).download([url])
 
 
 def download_choice():
@@ -879,11 +947,11 @@ def download_choice():
                 else:
                     videos_lst.append(video_url)
 
-        use_download_archive = str(input("\nUse the download archive file for not repeating downloads? [Y/n]"))
-        if use_download_archive in negative_choice:
-            global download_archive
-            download_archive = False
-            del youtube_config["download_archive"]
+        # use_download_archive = str(input("\nUse the download archive file for not repeating downloads? [Y/n]"))
+        # if use_download_archive in negative_choice:
+        #     global download_archive
+        #     download_archive = False
+        #     del youtube_config["download_archive"]
 
     clear()
     print(color.yellow(color.bold("CTRL + C")) +
@@ -960,12 +1028,14 @@ def groups_handler():
                     wait_input()
                     continue
                 while True:
+                    group_ytconfig = YTConfig(config_file=current_group["config_path"])
+
                     clear()
                     print(color.red(
                         color.bold("-------------------------GROUP-STATS------------------------")))
                     print("Group name: %s" % color.yellow(color.bold(current_group["name"])))
                     print("Creation date: %s" % color.yellow(color.bold(current_group["create_time"])))
-                    print("Download format: %s" % color.yellow(color.bold(current_group["format"])))
+                    print("Last download: %s" % color.yellow(color.bold(current_group["last_download"])))
                     print("%s channel(s)" % color.yellow(color.bold(str(len(current_group["channels"])))))
                     print(color.red(
                         color.bold("------------------------GROUP-ACTIONS-----------------------")))
@@ -973,6 +1043,7 @@ def groups_handler():
                     print(color.yellow(color.bold("2")) + ") Add channel(s)")
                     print(color.yellow(color.bold("3")) + ") Remove channel(s)")
                     print(color.yellow(color.bold("4")) + ") Rename group")
+                    print(color.yellow(color.bold("5")) + ") Set download options")
                     print(enter_to_return())
                     group_action = str(input(">:"))
                     if group_action == "":
@@ -981,7 +1052,7 @@ def groups_handler():
                         clear()
                         print(color.red(color.bold("-----------------------DOWNLOAD-GROUP-----------------------")))
                         if len(current_group["channels"]) == 0:
-                            print("No channel was found to be downloaded")
+                            print("No channel to download")
                             wait_input()
                             continue
 
@@ -1002,7 +1073,12 @@ def groups_handler():
                             print("     URL: %s" % current_group["channels"][channel])
                             print()
                             sleep(0.25)
-                            youtube_download(current_group["channels"][channel])
+                        youtube_download(current_group["channels"][channel],
+                                         youtube_config=YTConfig(current_group["config_path"]).get())
+
+                        print("Updating last download date to: %s" % str(datetime.now().replace(microsecond=0)))
+                        current_group["last_download"] = str(datetime.now().replace(microsecond=0))
+                        groups.update_json(current_groups)
 
                         if warnings >= 1:
                             print("\n   Download fished with %d warnings..." % warnings)
@@ -1096,6 +1172,8 @@ def groups_handler():
                             continue
                         current_group["name"] = new_name
                         groups.update_json(current_groups)
+                    elif group_action == "5":
+                        group_ytconfig.config_handler()
                     else:
                         clear()
                         wait_input()
@@ -1238,8 +1316,7 @@ def torrent_handler():
                                                   + "' to a .torrent\n")))
                     print(color.yellow(color.bold("Generating optimal bit size based on ~1500 pieces.")))
                     bit_size_info = create_torrent.generate_bit_size(path=channel_dict[add_channel_choice],
-                                                                     trackers=trackers, piece_size=None,
-                                                                     save_torrent_path=torrent_file_path)
+                                                                     trackers=trackers, piece_size=None)
                     print(color.yellow(color.bold("Using bit size of %dkb.\n" % (bit_size_info[2] // 1000))))
                     print(color.yellow(color.bold("Using %d trackers\n" % len(trackers))))
                     print(color.red(color.bold("     This could take a while depending on the channel size.\n"
@@ -1472,17 +1549,18 @@ if __name__ == "__main__":
     init(autoreset=True)
     signal.signal(signal.SIGINT, signal_handler)
 
+    # start routines
+    ConfigPath().init_sub_folders()
+
     # init instances
     color = Color()
     organizer = Organizer()
     create_torrent = CreateTorrent()
     qbittorrent = Qbittorrent()
-    # compress = Compress()
+    ytconfig = YTConfig()
     download_path = YTConfig.DownloadPath().get()
     download_format = YTConfig.Format()
     groups = Groups()
-
-    YTConfig().make_default()
 
     while True:
         clear()
@@ -1501,6 +1579,9 @@ if __name__ == "__main__":
             if choice.lower() == "conf":
                 config_handler()
                 continue
+
+            elif choice.lower() == "q":
+                exit_func()
 
             else:  # if user type something that is not an option, ignore and wait for another input
                 clear()

@@ -37,4 +37,5 @@ def get_downloaded_channels(root_path):
     print(downloaded_channels_list)
     return downloaded_channels_list
 
+
 compress_all_videos(path)
