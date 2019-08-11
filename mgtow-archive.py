@@ -452,22 +452,30 @@ class YTConfig:
             'format': "mp4[height=720]/mp4[height<720]/mp4",  # Video format code. See yt-dl for more info.
             'outtmpl': dl_path + '%(uploader)s/%(title)s.%(ext)s',
             # BOOLs
-            'restrictfilenames': True,
-            'no_warnings': True,
-            'ignoreerrors': True,
-            'nooverwrites': True,
-            'writedescription': True,
-            'writeinfojson': True,
-            'writethumbnail': True,
-            'writeautomaticsub': True,
-            'writeannotations': True,
-            'verbose': False,
-            'quiet': False,
-            'simulate': False,
-            'skip_download': False,
-            'noplaylist': False,
-            'playlistrandom': False,
-            'playlistreverse': False,
+            'restrictfilenames': True,  # Do not allow "&" and spaces in file names
+            'no_warnings': True,    # Do not print out anything for warnings.
+            'ignoreerrors': True,   # Do not stop on download errors.
+            'nooverwrites': True,   # Prevent overwriting files.
+            'writedescription': True,   # Write the video description to a .description file
+            'writeinfojson': True,  # Write metadata to a json file
+            'writethumbnail': True,     # Write the thumbnail image to a file
+            'writeautomaticsub': True,  # Write the automatically generated subtitles to a file
+            'writeannotations': True,   # Write video annotations
+            'verbose': False,   # Print additional info to stdout.
+            'quiet': False,     # Do not print messages to stdout.
+            'simulate': False,  # Do not download the video files.
+            'skip_download': False,     # Skip the actual download of the video file
+            'noplaylist': False,    # Download single video instead of a playlist if in doubt.
+            'playlistrandom': False,    # Download playlist items in random order.
+            'playlistreverse': False,  # Download playlist items in reverse order.
+            'forceurl': False,  # Force printing final URL.
+            'forcetitle': False,  # Force printing title.
+            'forceid': False,  # Force printing ID.
+            'forcethumbnail': False,  # Force printing thumbnail URL.
+            'forcedescription': False,  # Force printing description.
+            'forcefilename': False,  # Force printing final filename.
+            'forceduration': False,  # Force printing duration.
+            'forcejson': False,  # Force printing info_dict as JSON.
         }
         Json.encode(youtube_default_config, self.config_file)
 
@@ -795,47 +803,6 @@ def get_channel_size(channel_path):
             # use getsize to generate size in bytes and add it to the total size
             channel_size += os.path.getsize(f)
     return channel_size
-
-
-# youtube_config = {  # --------------------CHANGE-THIS!!!--------------------- #
-#
-#     'logger': Logger(),  # Logger instance, don't change it!
-#     'download_archive': YTConfig.DownloadPath().get() + '/download_archive',
-#
-#     'format': YTConfig.Format().get(raw=True),  # Video format code. See yt-dl for more info.
-#     'outtmpl': YTConfig.DownloadPath().get() + '/%(uploader)s/%(title)s.%(ext)s',
-#
-#     'restrictfilenames': True,  # Do not allow "&" and spaces in file names
-#     'no_warnings': True,  # Do not print out anything for warnings.
-#     'ignoreerrors': True,  # Do not stop on download errors.
-#     'nooverwrites': True,  # Prevent overwriting files.
-#     'writedescription': True,  # Write the video description to a .description file
-#     'writeinfojson': True,  # Write metadata to a json file
-#     'writethumbnail': True,  # Write the thumbnail image to a file
-#     'writeautomaticsub': True,  # Write the automatically generated subtitles to a file
-#     'writeannotations': True,  # Write video annotations
-#     'verbose': False,  # Print additional info to stdout.
-#     'quiet': False,  # Do not print messages to stdout.
-#     'simulate': False,  # Do not download the video files.
-#     'skip_download': False,  # Skip the actual download of the video file
-#     'noplaylist': False,  # Download single video instead of a playlist if in doubt.
-#     'playlistrandom': False,  # Download playlist items in random order.
-#     'playlistreverse': False,  # Download playlist items in reverse order.
-#     'forceurl':                 False,              # Force printing final URL.
-#     'forcetitle':               False,              # Force printing title.
-#     'forceid':                  False,              # Force printing ID.
-#     'forcethumbnail':           False,              # Force printing thumbnail URL.
-#     'forcedescription':         False,              # Force printing description.
-#     'forcefilename':            False,              # Force printing final filename.
-#     'forceduration':            False,              # Force printing duration.
-#     'forcejson':                False,              # Force printing info_dict as JSON.
-# }
-
-
-def set_compress_type():
-    clear()
-    print(color.red(color.bold("----------------------COMPRESSING-TYPE----------------------")))
-
 
 def set_sorting_type():
     clear()
