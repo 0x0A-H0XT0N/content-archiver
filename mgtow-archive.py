@@ -783,11 +783,11 @@ def show_menu():
     print(color.red("   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝"))
     print("                 by " + color.red(color.bold("PhoenixK7PB")))
     print(color.yellow(color.bold("1")) + ") Download video/playlist/channel  " +
-          color.red(color.bold("|")) + "  " + color.yellow(color.bold("conf")) + ") General configuration")
+          color.red(color.bold("|")) + "  " + color.yellow(color.bold("conf")) + ") Set download options")
     print(color.yellow(color.bold("2")) + ") Groups                           " +
-          color.red(color.bold("|")) + "  ")
+          color.red(color.bold("|")) + "  " + color.yellow(color.bold("path")) + ") Set download path")
     print(color.yellow(color.bold("3")) + ") qBittorrent interface (v4.1+)    " +
-          color.red(color.bold("|")) + "  ")
+          color.red(color.bold("|")) + "  " + color.yellow(color.bold("sort")) + ") Set sorting type")
     print(color.yellow(color.bold("0")) + ") Exit                             " +
           color.red(color.bold("|")) + "  ")
 
@@ -827,52 +827,6 @@ def set_sorting_type():
     elif sorting_choice.lower() == "2":
         organizer.sort_by_type(download_path)
     wait_input()
-
-
-def config_handler():
-    """
-    this function is used to handle pretty much all configuration process on the program,
-    this is pretty much straight forward and should be easy to read (ignore color calls)
-    :return:  depends i guess :p
-    """
-    while True:
-        clear()
-        print(color.red(color.bold("------------------------CONFIGURATION-----------------------")))
-        # print(color.yellow(color.bold("compress")) + ") Set compress style      " + color.red(color.bold("|")) +
-        #       "  " + color.yellow(color.bold("NONE")))
-
-        print(color.yellow(color.bold("config")) + ") Set download options    " + color.red(color.bold("|")) +
-              "  " + color.yellow(color.bold("")))
-
-        print(color.yellow(color.bold("  path")) + ") Set download path       " + color.red(color.bold("|")) +
-              "  " + color.yellow(color.bold(download_path)))
-        print(color.yellow(color.bold("  sort")) + ") Set sorting type        " + color.red(color.bold("|")) +
-              "  " + color.yellow(color.bold(organizer.get_sort_type())))
-        print(enter_to_return())
-        config_choice = str(input(">:"))  # try to convert choice(str) to choice(int),
-        if config_choice == "":
-            clear()
-            break
-
-        elif config_choice.lower() == "path":
-            YTConfig.DownloadPath().set()
-            continue
-
-        elif config_choice.lower() == "config":
-            ytconfig.config_handler()
-            continue
-
-        # elif config_choice.lower() == "compress":
-        #     set_compress_type()
-        #     continue
-
-        elif config_choice.lower() == "sort":
-            set_sorting_type()
-            continue
-
-        else:
-            clear()
-            wait_input()
 
 
 def youtube_download(url, youtube_config=None):
@@ -1548,7 +1502,15 @@ if __name__ == "__main__":
 
         except ValueError:  # if the int() parser cant convert, raises a ValueError, this take care if it
             if choice.lower() == "conf":
-                config_handler()
+                ytconfig.config_handler()
+                continue
+
+            elif choice.lower() == "path":
+                YTConfig.DownloadPath().set()
+                continue
+
+            elif choice.lower() == "sort":
+                set_sorting_type()
                 continue
 
             elif choice.lower() == "q":
