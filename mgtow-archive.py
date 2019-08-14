@@ -674,7 +674,6 @@ class Groups:
         self.groups_config_path = ConfigPath().get() + "groups/groups.json"
         if not os.path.exists(self.groups_config_path):
             Json.encode([], self.groups_config_path)
-        self.current = self.get()
 
     def get(self):
         return Json.decode(self.groups_config_path)
@@ -693,13 +692,15 @@ class Groups:
             "config_path":          ConfigPath().get() + "groups/" + name + "_" +
                                     current_time.replace(" ", "-").replace(":", "-") + ".config.json"
         }
-        self.current.append(group_attr)
+        current = self.get()
+        current.append(group_attr)
         YTConfig(group_attr["config_path"]).make_default()
-        return self.update_json(self.current)
+        return self.update_json(current)
 
     def remove(self, list_item):
-        self.current.pop(list_item)
-        return self.update_json(self.current)
+        current = self.get()
+        del current[list_item]
+        return self.update_json(current)
 
 
 def clear():
@@ -1030,7 +1031,7 @@ def groups_handler():
                         if download_channels_choice not in affirmative_choice:
                             continue
                         clear()
-                        print(color.yellow(color.bold("CTRL + C")) + " to cancel download.")
+                        print(color.yellow(color.bold("CTFRL + C")) + " to cancel download.")
                         sleep(0.5)
                         channel_count = 0
                         for channel in current_group["channels"]:
@@ -1182,7 +1183,9 @@ def groups_handler():
                         clear()
                         sure = str(input("Delete all groups selected. Proceed? [y/N]"))
                         if sure in affirmative_choice:
-                            groups.update_json([])
+                            for group in current_groups:
+                                os.remove(group["config_path"])  # remove each group config
+                            groups.update_json([])  # wipe groups.json
                             break
                     try:
                         deleted_group = int(removed_group) - 1
@@ -1198,7 +1201,8 @@ def groups_handler():
                         print("Number selected does not correspond to any group.")
                         wait_input()
                         continue
-                    groups.remove(deleted_group)
+                    os.remove(current_groups[deleted_group]["config_path"])  # remove group config
+                    groups.remove(deleted_group)    # remove group from groups.config
                     break
         else:
             clear()
