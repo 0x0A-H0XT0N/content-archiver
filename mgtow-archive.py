@@ -6,12 +6,12 @@
 #  ╚═╝     ╚═╝ ╚═════╝   ╚═╝    ╚═════╝  ╚══╝╚══╝     ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝
 # https://github.com/PhoenixK7PB/mgtow-archive
 #
-# TODO: compressing system
+# TODO: compressing system (NEEDED???)
 # TODO: re-make README.md
 # TODO: make a list of all possible bit sizes for the user to choose from
 # TODO: add custom format option
 # TODO: add custom bool option
-# TODO: add filters to download option
+# TODO: add filters to download option <-
 # TODO: make shortcuts
 
 # import tarfile
@@ -527,6 +527,8 @@ class YTConfig:
         while True:
             clear()
             print(color.red(color.bold("----------------------DOWNLOAD-OPTIONS----------------------")))
+            print(color.yellow(color.bold("filters")) + ") Set download filters  " + color.red(color.bold("|")) +
+                  "  " + color.yellow(color.bold("")))  # TODO
             print(color.yellow(color.bold("archive")) + ") Download archive options  " + color.red(color.bold("|")) +
                   "  " + color.yellow(color.bold(self.DownloadArchive(self.config_file).state(raw=False))))
             print(color.yellow(color.bold(" format")) + ") Set download format       " + color.red(color.bold("|")) +
@@ -543,6 +545,8 @@ class YTConfig:
                 self.Bool(self.config_file).bool_handler()
             elif download_options_choice == "archive":
                 self.DownloadArchive(self.config_file).archive_handler()
+            elif download_options_choice == "filters":
+                pass    # TODO
             else:
                 continue
 
