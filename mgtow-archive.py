@@ -12,7 +12,6 @@
 # TODO: add custom format option
 # TODO: add custom bool option
 # TODO: add filters to download option
-# TODO: add option to turn off download_archive
 # TODO: make shortcuts
 
 # import tarfile
@@ -325,8 +324,9 @@ class YTConfig:
 
         def update_format(self, ext):
             self.current_config["format"] = ext
-            self.current_config["download_archive"] = self.ytconfig.DownloadArchive().get(
-                ext=list(self.formats.keys())[list(self.formats.values()).index(ext)])
+            if self.ytconfig.DownloadArchive(self.config_file).state():
+                self.current_config["download_archive"] = self.ytconfig.DownloadArchive().get(
+                    ext=list(self.formats.keys())[list(self.formats.values()).index(ext)])
             self.ytconfig.update(self.current_config)
 
         def format_handler(self):
@@ -371,15 +371,59 @@ class YTConfig:
                     wait_input()
 
     class DownloadArchive:
-        def __init__(self):
+        def __init__(self, config_file=ConfigPath().get() + "master_config.json"):
+            self.config_file = config_file
             self.download_archive_path = ConfigPath().get() + "download_archives/"
-            self.format = YTConfig.Format().get()
+            self.format = YTConfig.Format(self.config_file).get()
 
         def get(self, ext="auto"):
             if ext == "auto":
                 return self.download_archive_path + "download_archive_" + self.format
             else:
                 return self.download_archive_path + "download_archive_" + ext
+
+        def state(self, raw=True):
+            """
+
+            :return: True if on, False if off
+            """
+            current_config = YTConfig(self.config_file).get()
+            archive_state = True if "download_archive" in current_config.keys() else False
+            if raw:
+                return archive_state
+            elif not raw:
+                if archive_state:
+                    return "on"
+                else:
+                    return "off"
+
+        def archive_handler(self):
+            while True:
+                current_state = self.state()
+                current_state_formatted = self.state(raw=False)
+                current_config = YTConfig(self.config_file).get()
+                clear()
+                print(color.red(color.bold("----------------------DOWNLOAD-ARCHIVE----------------------")))
+                print(color.yellow(color.bold("1")) + ") Turn on/off            |  ", end="")
+                print(color.yellow(color.bold(current_state_formatted)))
+                print(enter_to_return())
+
+                archive_choice = str(input(">:"))
+                if archive_choice == "":
+                    break
+
+                elif archive_choice == "1":
+                    if current_state:
+                        del current_config["download_archive"]
+                        YTConfig(self.config_file).update(current_config)
+
+                    elif not current_state:
+                        current_config["download_archive"] = self.get()
+                        YTConfig(self.config_file).update(current_config)
+
+                else:
+                    clear()
+                    wait_input()
 
     class Bool:
         def __init__(self, config_file=ConfigPath().get() + "master_config.json"):
@@ -483,9 +527,11 @@ class YTConfig:
         while True:
             clear()
             print(color.red(color.bold("----------------------DOWNLOAD-OPTIONS----------------------")))
-            print(color.yellow(color.bold("format")) + ") Set download format     " + color.red(color.bold("|")) +
+            print(color.yellow(color.bold("archive")) + ") Download archive options  " + color.red(color.bold("|")) +
+                  "  " + color.yellow(color.bold(self.DownloadArchive(self.config_file).state(raw=False))))
+            print(color.yellow(color.bold(" format")) + ") Set download format       " + color.red(color.bold("|")) +
                   "  " + color.yellow(color.bold(self.Format(self.config_file).get())))
-            print(color.yellow(color.bold("others")) + ") On or Off options       " + color.red(color.bold("|")) + "  ")
+            print(color.yellow(color.bold(" others")) + ") On or Off options         " + color.red(color.bold("|")))
             print(enter_to_return())
             download_options_choice = str(input(">:"))
 
@@ -495,6 +541,8 @@ class YTConfig:
                 self.Format(self.config_file).format_handler()
             elif download_options_choice == "others":
                 self.Bool(self.config_file).bool_handler()
+            elif download_options_choice == "archive":
+                self.DownloadArchive(self.config_file).archive_handler()
             else:
                 continue
 
@@ -985,7 +1033,7 @@ def groups_handler():
                         if download_channels_choice not in affirmative_choice:
                             continue
                         clear()
-                        print(color.yellow(color.bold("CTFRL + C")) + " to cancel download.")
+                        print(color.yellow(color.bold("CTRL + C")) + " to cancel download.")
                         sleep(0.5)
                         channel_count = 0
                         for channel in current_group["channels"]:
