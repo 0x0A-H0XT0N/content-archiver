@@ -13,6 +13,7 @@
 # TODO: add custom bool option
 # TODO: add filters to download option <-
 # TODO: make shortcuts
+# TODO: add option to reset download config
 
 # import tarfile
 import json
@@ -322,14 +323,14 @@ class YTConfig:
             elif raw:
                 return self.current_config["format"]
 
-        def update_format(self, ext):
+        def update(self, ext):
             self.current_config["format"] = ext
             if self.ytconfig.DownloadArchive(self.config_file).state():
                 self.current_config["download_archive"] = self.ytconfig.DownloadArchive().get(
                     ext=list(self.formats.keys())[list(self.formats.values()).index(ext)])
             self.ytconfig.update(self.current_config)
 
-        def format_handler(self):
+        def handler(self):
             while True:
                 clear()
                 print(color.red(color.bold("-----------------------DOWNLOAD-FORMAT----------------------")))
@@ -355,16 +356,16 @@ class YTConfig:
                 if format_choice == "":
                     break
                 elif format_choice == "1":
-                    self.update_format(self.formats["mp4"])
+                    self.update(self.formats["mp4"])
                     self.get()
                 elif format_choice == "2":
-                    self.update_format(self.formats["mp3"])
+                    self.update(self.formats["mp3"])
                     self.get()
                 elif format_choice == "3":
-                    self.update_format(self.formats["bestaudio"])
+                    self.update(self.formats["bestaudio"])
                     self.get()
                 elif format_choice == "4":
-                    self.update_format(self.formats["best"])
+                    self.update(self.formats["best"])
                     self.get()
                 else:
                     clear()
@@ -397,7 +398,7 @@ class YTConfig:
                 else:
                     return "off"
 
-        def archive_handler(self):
+        def handler(self):
             while True:
                 current_state = self.state()
                 current_state_formatted = self.state(raw=False)
@@ -429,7 +430,7 @@ class YTConfig:
         def __init__(self, config_file=ConfigPath().get() + "master_config.json"):
             self.config_file = config_file
 
-        def bool_handler(self):
+        def handler(self):
             while True:
                 clear()
                 print(color.red(color.bold("------------------------OTHER-OPTIONS-----------------------")))
@@ -466,6 +467,108 @@ class YTConfig:
             if not obj:
                 return True
 
+    class Filters:
+        pass
+
+    class PostProcessing:
+        def __init__(self, config_file=ConfigPath().get() + "master_config.json"):
+            self.config_file = config_file
+
+        def handler(self):
+            while True:
+                current_config = YTConfig(self.config_file).get()
+                postprocessor = current_config['postprocessors']
+                clear()
+                print(color.red(color.bold("----------------------EMBEDDING-OPTIONS---------------------")))
+                print(color.yellow(color.bold("1")) + ") Embed thumbnail           " + color.red(color.bold("|")) +
+                      color.yellow(color.bold("  %s" % self.get_thumbnail(raw=False))))
+                print(color.yellow(color.bold("2")) + ") Embed metadata            " + color.red(color.bold("|")) +
+                      color.yellow(color.bold("  %s" % self.get_metadata(raw=False))))
+                print(color.yellow(color.bold("3")) + ") Embed subtitle            " + color.red(color.bold("|")) +
+                      color.yellow(color.bold("  %s" % self.get_subtitle(raw=False))))
+                print(enter_to_return())
+                embed_choice = str(input(">:"))
+
+                if embed_choice == "":
+                    break
+                elif embed_choice == "1":
+                    thumbnail = {'key': "EmbedThumbnail"}
+                    if self.get_thumbnail():
+                        index = postprocessor.index(thumbnail)
+                        del postprocessor[index]
+                        YTConfig(self.config_file).update(current_config)
+                    elif not self.get_thumbnail():
+                        postprocessor.append(thumbnail)
+                        YTConfig(self.config_file).update(current_config)
+
+                elif embed_choice == "2":
+                    metadata = {'key': "FFmpegMetadata"}
+                    if self.get_metadata():
+                        index = postprocessor.index(metadata)
+                        del postprocessor[index]
+                        YTConfig(self.config_file).update(current_config)
+                    elif not self.get_metadata():
+                        postprocessor.append(metadata)
+                        YTConfig(self.config_file).update(current_config)
+                elif embed_choice == "3":
+                    subtitle = {'key': "FFmpegEmbedSubtitle"}
+                    if self.get_subtitle():
+                        index = postprocessor.index(subtitle)
+                        del postprocessor[index]
+                        YTConfig(self.config_file).update(current_config)
+                    elif not self.get_subtitle():
+                        postprocessor.append(subtitle)
+                        YTConfig(self.config_file).update(current_config)
+                else:
+                    wait_input()
+                    continue
+
+        def get_thumbnail(self, raw=True):
+            if raw:
+                if {'key': "EmbedThumbnail"} in YTConfig(self.config_file).get()['postprocessors']:
+                    return True
+                else:
+                    return False
+            elif not raw:
+                if {'key': "EmbedThumbnail"} in YTConfig(self.config_file).get()['postprocessors']:
+                    return "On"
+                else:
+                    return "Off"
+
+        def get_metadata(self, raw=True):
+            if raw:
+                if {'key': "FFmpegMetadata"} in YTConfig(self.config_file).get()['postprocessors']:
+                    return True
+                else:
+                    return False
+            elif not raw:
+                if {'key': "FFmpegMetadata"} in YTConfig(self.config_file).get()['postprocessors']:
+                    return "On"
+                else:
+                    return "Off"
+
+        def get_subtitle(self, raw=True):
+            if raw:
+                if {'key': "FFmpegEmbedSubtitle"} in YTConfig(self.config_file).get()['postprocessors']:
+                    return True
+                else:
+                    return False
+            elif not raw:
+                if {'key': "FFmpegEmbedSubtitle"} in YTConfig(self.config_file).get()['postprocessors']:
+                    return "On"
+                else:
+                    return "Off"
+
+        # {
+        #     'key': "EmbedThumbnail"
+        # },
+        # {
+        #     'key': "FFmpegMetadata"
+        # },
+        # {
+        #     'key': "FFmpegEmbedSubtitle"
+        # },
+
     def __init__(self, config_file=ConfigPath().get() + "master_config.json"):
         self.config_file = config_file
         self.config = self.get()
@@ -491,11 +594,19 @@ class YTConfig:
     def make_default(self):
         dl_path = self.DownloadPath().get()
         youtube_default_config = {
+            # POST PROCESSING
+            'postprocessors':   [],
+            # FILTERS
+            'matchtitle': None,
+            'rejecttitle': None,
+            'daterange': None,
+            'min_views': None,
+            'max_views': None,
             # USER DEFINED
             'download_archive': dl_path + "download_archive_mp4",
             'format': "mp4[height=720]/mp4[height<720]/mp4",  # Video format code. See yt-dl for more info.
             'outtmpl': dl_path + '%(uploader)s/%(title)s.%(ext)s',
-            # BOOLs
+            # BOOLS
             'restrictfilenames': True,  # Do not allow "&" and spaces in file names
             'no_warnings': True,    # Do not print out anything for warnings.
             'ignoreerrors': True,   # Do not stop on download errors.
@@ -505,6 +616,8 @@ class YTConfig:
             'writethumbnail': True,     # Write the thumbnail image to a file
             'writeautomaticsub': True,  # Write the automatically generated subtitles to a file
             'writeannotations': True,   # Write video annotations
+            'prefer_ffmpeg': True,      # Prefer ffmpeg for post processing
+            'keepvideo': False,     # Keep post processing video files
             'verbose': False,   # Print additional info to stdout.
             'quiet': False,     # Do not print messages to stdout.
             'simulate': False,  # Do not download the video files.
@@ -527,27 +640,33 @@ class YTConfig:
         while True:
             clear()
             print(color.red(color.bold("----------------------DOWNLOAD-OPTIONS----------------------")))
-            print(color.yellow(color.bold("filters")) + ") Set download filters  " + color.red(color.bold("|")) +
-                  "  " + color.yellow(color.bold("")))  # TODO
+            print(color.yellow(color.bold("filters")) + ") Set download filters      " + color.red(color.bold("|")))
             print(color.yellow(color.bold("archive")) + ") Download archive options  " + color.red(color.bold("|")) +
                   "  " + color.yellow(color.bold(self.DownloadArchive(self.config_file).state(raw=False))))
             print(color.yellow(color.bold(" format")) + ") Set download format       " + color.red(color.bold("|")) +
                   "  " + color.yellow(color.bold(self.Format(self.config_file).get())))
             print(color.yellow(color.bold(" others")) + ") On or Off options         " + color.red(color.bold("|")))
+            print(color.yellow(color.bold("  embed")) + ") Set embedding options     " + color.red(color.bold("|")))
+            print(color.yellow(color.bold("  reset")) + ") Reset config to default   " + color.red(color.bold("|")))
             print(enter_to_return())
             download_options_choice = str(input(">:"))
 
             if download_options_choice == "":
                 return
             elif download_options_choice == "format":
-                self.Format(self.config_file).format_handler()
+                self.Format(self.config_file).handler()
             elif download_options_choice == "others":
-                self.Bool(self.config_file).bool_handler()
+                self.Bool(self.config_file).handler()
             elif download_options_choice == "archive":
-                self.DownloadArchive(self.config_file).archive_handler()
+                self.DownloadArchive(self.config_file).handler()
             elif download_options_choice == "filters":
                 pass    # TODO
+            elif download_options_choice == "embed":
+                self.PostProcessing(self.config_file).handler()
+            elif download_options_choice == "reset":
+                pass    # TODO
             else:
+                wait_input()
                 continue
 
     # def master_popup(self):
