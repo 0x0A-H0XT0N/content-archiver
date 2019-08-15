@@ -13,7 +13,6 @@
 # TODO: add custom bool option
 # TODO: add filters to download option <-
 # TODO: make shortcuts
-# TODO: add option to reset download config
 
 # import tarfile
 import json
@@ -559,16 +558,6 @@ class YTConfig:
                 else:
                     return "Off"
 
-        # {
-        #     'key': "EmbedThumbnail"
-        # },
-        # {
-        #     'key': "FFmpegMetadata"
-        # },
-        # {
-        #     'key': "FFmpegEmbedSubtitle"
-        # },
-
     def __init__(self, config_file=ConfigPath().get() + "master_config.json"):
         self.config_file = config_file
         self.config = self.get()
@@ -664,7 +653,12 @@ class YTConfig:
             elif download_options_choice == "embed":
                 self.PostProcessing(self.config_file).handler()
             elif download_options_choice == "reset":
-                pass    # TODO
+                clear()
+                print(color.yellow(color.bold("This will reset your config to default. ") +
+                      color.yellow(color.bold("Proceed? [y/N]"))))
+                reset_choice = str(input(">:"))
+                if reset_choice in affirmative_choice:
+                    self.make_default()
             else:
                 wait_input()
                 continue
