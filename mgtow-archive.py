@@ -6,7 +6,6 @@
 #  ╚═╝     ╚═╝ ╚═════╝   ╚═╝    ╚═════╝  ╚══╝╚══╝     ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝
 # https://github.com/PhoenixK7PB/mgtow-archive
 #
-# TODO: compressing system (NEEDED???)
 # TODO: re-make README.md
 # TODO: make a list of all possible bit sizes for the user to choose from
 # TODO: add custom format option
