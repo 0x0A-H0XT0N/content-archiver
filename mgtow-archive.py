@@ -54,12 +54,13 @@ class Color:
     Pretty much straight forward to read.
     Just use Color().wantedColorOrBold(textToBeColoredOrBolded).
     """
-    RED = Fore.RED
-    YELLOW = Fore.YELLOW
-    BLUE = Fore.BLUE
-    GREEN = Fore.GREEN
-    BOLD = '\033[1m'
-    END = '\033[0m'
+    def __init__(self):
+        self.RED = Fore.RED
+        self.YELLOW = Fore.YELLOW
+        self.BLUE = Fore.BLUE
+        self.GREEN = Fore.GREEN
+        self.BOLD = '\033[1m'
+        self.END = '\033[0m'
 
     def red(self, text):
         return self.RED + text
