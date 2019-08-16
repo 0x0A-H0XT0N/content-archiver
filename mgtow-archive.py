@@ -429,14 +429,22 @@ class YTConfig:
     class Bool:
         def __init__(self, config_file=ConfigPath().get() + "master_config.json"):
             self.config_file = config_file
+            self.custom_file = ConfigPath().get() + "custom_bools.json"
+
+        # def get_custom(self):
+        #     try:
+        #         return Json.decode(self.custom_file)
+        #     except FileNotFoundError:
+        #         Json.encode(, self.custom_file)
+        #         return self.get_custom()
 
         def handler(self):
             while True:
+                config = YTConfig(self.config_file).get()
+                # custom = self.get_custom()
+
                 clear()
                 print(color.red(color.bold("------------------------OTHER-OPTIONS-----------------------")))
-
-                config = YTConfig(self.config_file).get()
-
                 bool_count = 0
                 bool_dict = dict()
                 for option in config:
@@ -445,9 +453,17 @@ class YTConfig:
                     bool_count += 1
                     print(color.yellow(color.bold(str(bool_count))) + ") %s : %s" % (option, config[option]))
                     bool_dict[str(bool_count)] = option
+                # print(color.red(color.bold("---------------------------CUSTOM---------------------------")))
+                # custom_bool_count = 0
+                # custom_bool_dict = dict()
+                # for bool in custom:
+                #     if not isinstance(config[option], bool):
+                #         continue
+                #     bool_count += 1
+                #     print(color.yellow(color.bold(str(bool_count))) + ") %s : %s" % (option, config[option]))
+                #     bool_dict[str(bool_count)] = option
                 print(enter_to_return())
                 bool_choice = str(input(">:"))
-
                 if bool_choice == "":
                     break
                 elif bool_choice in bool_dict.keys():
@@ -669,12 +685,6 @@ class YTConfig:
     #                                "These options will be the default for new groups and for non-group downloads."
     #                                "This will not effect or overwrite existing group options.")))
     #     wait_input()
-
-
-class Compress:
-    # TODO
-    pass
-
 
 class Base64:
     @staticmethod
