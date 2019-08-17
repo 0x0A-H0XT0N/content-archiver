@@ -8,7 +8,6 @@
 #
 # TODO: re-make README.md
 # TODO: make a list of all possible bit sizes for the user to choose from
-# TODO: add custom format option
 # TODO: add filters to download option <-
 # TODO: make shortcuts
 
