@@ -31,8 +31,8 @@ from dottorrent import Torrent
 from pathlib import Path
 from time import sleep, process_time
 
-affirmative_choice = ["y", "Y", "yes", "s", "sim", "yeah", "yah", "ya"]  # affirmative choices, used on user interaction
-negative_choice = ["n", "no", "nao", "na", "nop", "nah"]  # negative choices, used on user interaction
+affirmative_choice = ["y", "Y", "yes", "s", "sim", "yeah", "yah", "ya"]  # affirmative choices, user input detection
+negative_choice = ["n", "no", "nao", "na", "nop", "nah"]  # negative choices, user input detection
 
 original_stdin_settings = termios.tcgetattr(sys.stdin)
 
@@ -305,6 +305,7 @@ class YTConfig:
     class Format:
         def __init__(self, config_file=ConfigPath().get() + "master_config.json"):
             self.config_file = config_file
+            self.custom_file = ConfigPath().get() + "custom_formats.json"
             self.ytconfig = YTConfig(self.config_file)
             self.current_config = self.ytconfig.get()
             self.formats = {
@@ -316,58 +317,166 @@ class YTConfig:
 
         def get(self, raw=False):
 
+            current_format = self.current_config["format"]
+
             if not raw:
-                return list(self.formats.keys())[list(self.formats.values()).index(self.current_config["format"])]
+                try:
+                    return list(self.formats.keys())[list(self.formats.values()).index(current_format)]
+                except ValueError:
+                    custom = self.get_custom()
+                    if current_format in custom.values():
+                        return list(custom.keys())[list(custom.values()).index(current_format)]
+                    else:
+                        return current_format
             elif raw:
-                return self.current_config["format"]
+                return current_format
+
+        def get_custom(self):
+            try:
+                return Json.decode(self.custom_file)
+            except FileNotFoundError:
+                Json.encode({}, self.custom_file)
+                return self.get_custom()
 
         def update(self, ext):
             self.current_config["format"] = ext
             if self.ytconfig.DownloadArchive(self.config_file).state():
-                self.current_config["download_archive"] = self.ytconfig.DownloadArchive().get(
-                    ext=list(self.formats.keys())[list(self.formats.values()).index(ext)])
+                try:
+                    self.current_config["download_archive"] = self.ytconfig.DownloadArchive().\
+                        get(ext=list(self.formats.keys())[list(self.formats.values()).index(ext)])
+                except ValueError:
+                    custom = self.get_custom()
+                    self.current_config["download_archive"] = self.ytconfig.DownloadArchive(). \
+                        get(ext=list(custom.keys())[list(custom.values()).index(ext)])
             self.ytconfig.update(self.current_config)
 
         def handler(self):
             while True:
                 clear()
                 print(color.red(color.bold("-----------------------DOWNLOAD-FORMAT----------------------")))
+                custom = self.get_custom()
                 current_format = self.get()
 
-                print(color.yellow(color.bold("1)")) + "    (" + color.red(color.bold("X")) + ") MP4") \
-                    if current_format == "mp4" else print(color.yellow(color.bold("1)")) + "    ( ) MP4")
+                print(color.yellow(color.bold("1")) + ")    (" + color.red(color.bold("X")) + ") MP4") \
+                    if current_format == "mp4" else print(color.yellow(color.bold("1")) + ")    ( ) MP4")
 
-                print(color.yellow(color.bold("2)")) + "    (" + color.red(color.bold("X")) + ") MP3") \
-                    if current_format == "mp3" else print(color.yellow(color.bold("2)")) + "    ( ) MP3")
+                print(color.yellow(color.bold("2")) + ")    (" + color.red(color.bold("X")) + ") MP3") \
+                    if current_format == "mp3" else print(color.yellow(color.bold("2")) + ")    ( ) MP3")
 
-                print(color.yellow(color.bold("3)")) + "    (" + color.red(color.bold("X")) +
+                print(color.yellow(color.bold("3")) + ")    (" + color.red(color.bold("X")) +
                       ") Best audio only format available") \
-                    if current_format == "bestaudio" else print(color.yellow(color.bold("3)")) +
-                                                                "    ( ) Best audio only format available")
-                print(color.yellow(color.bold("4)")) + "    (" + color.red(color.bold("X")) + ") Best format available") \
-                    if current_format == "best" else print(
-                    color.yellow(color.bold("4)")) + "    ( ) Best format available")
-
+                    if current_format == "bestaudio" else print(color.yellow(color.bold("3")) +
+                                                                ")    ( ) Best audio only format available")
+                print(color.yellow(color.bold("4")) + ")    (" + color.red(color.bold("X")) +
+                      ") Best format available") if current_format == "best" else print(
+                    color.yellow(color.bold("4")) + ")    ( ) Best format available")
+                print(color.red(color.bold("---------------------------CUSTOM---------------------------")))
+                custom_count = 0
+                custom_dict = dict()
+                if len(custom) > 0:
+                    for custom_format in custom:
+                        custom_count += 1
+                        print(color.yellow(color.bold(str(custom_count) + "c")) + ")   (" + color.red(color.bold("X")) +
+                              ") %s : %s" % (custom_format, custom[custom_format])) if current_format == custom_format \
+                            else print(color.yellow(color.bold(str(custom_count) + "c")) + ")    ( ) %s : %s"
+                                       % (custom_format, custom[custom_format]))
+                        custom_dict[str(custom_count)] = custom_format
+                    print()
+                print(color.yellow(color.bold("add")) + ") Add a custom format")
+                print(color.yellow(color.bold("del")) + ") Remove a custom format")
                 print(enter_to_return())
                 format_choice = str(input(">:"))
 
                 if format_choice == "":
                     break
-                elif format_choice == "1":
-                    self.update(self.formats["mp4"])
-                    self.get()
-                elif format_choice == "2":
-                    self.update(self.formats["mp3"])
-                    self.get()
-                elif format_choice == "3":
-                    self.update(self.formats["bestaudio"])
-                    self.get()
-                elif format_choice == "4":
-                    self.update(self.formats["best"])
-                    self.get()
+                elif format_choice == "add":
+                    while True:
+                        clear()
+                        print(color.red(color.bold("-------------------------ADD-CUSTOM-------------------------")))
+                        print(color.yellow(color.bold("Leave blank to cancel.\n")))
+                        custom_name = str(input("Format name?\n>:"))
+                        custom_code = str(input("\nFormat code?\n>:"))
+                        if custom_name and custom_code != "":
+                            custom[custom_name] = custom_code
+                            Json.encode(custom, self.custom_file)
+                            custom = self.get_custom()
+                            add_another_format_choice = str(input("\nAdd another format? [y/N]\n>:"))
+                            if add_another_format_choice not in affirmative_choice:
+                                break
+                        else:
+                            break
+                    continue
+                elif format_choice == "del":
+                    while True:
+                        clear()
+                        print(color.red(color.bold("------------------------REMOVE-CUSTOM-----------------------")))
+                        if len(custom) == 0:
+                            print("No custom format found.")
+                            wait_input()
+                            break
+                        custom_count = 0
+                        custom_dict = dict()
+                        for custom_format in custom:
+                            custom_count += 1
+                            print(color.yellow(color.bold(str(custom_count))) + ") %s : %s"
+                                  % (custom_format, custom[custom_format]))
+                            custom_dict[str(custom_count)] = custom_format
+                        print(enter_to_return())
+                        remove_custom_choice = str(input(">:"))
+                        if remove_custom_choice == "":
+                            break
+                        try:
+                            custom_choice = int(remove_custom_choice)
+                            if custom_choice < 1:
+                                raise ValueError
+                            if custom_choice > custom_count:
+                                raise ValueError
+                        except ValueError:
+                            clear()
+                            wait_input()
+                            continue
+                        del custom[custom_dict[remove_custom_choice]]
+                        Json.encode(custom, self.custom_file)
+                    continue
+
+                if "c" in format_choice:
+                    if len(custom) == 0:
+                        clear()
+                        wait_input()
+                        continue
+                    format_strip = format_choice.strip("c")
+                    try:
+                        custom_choice = int(format_strip)
+                        if custom_choice < 1:
+                            raise ValueError
+                        if custom_choice > custom_count:
+                            raise ValueError
+                    except ValueError:
+                        clear()
+                        wait_input()
+                        continue
+                    self.update(custom[custom_dict[format_strip]])
                 else:
-                    clear()
-                    wait_input()
+                    if format_choice == "1":
+                        self.update(self.formats["mp4"])
+                        self.get()
+                        continue
+                    elif format_choice == "2":
+                        self.update(self.formats["mp3"])
+                        self.get()
+                        continue
+                    elif format_choice == "3":
+                        self.update(self.formats["bestaudio"])
+                        self.get()
+                        continue
+                    elif format_choice == "4":
+                        self.update(self.formats["best"])
+                        self.get()
+                        continue
+                    else:
+                        clear()
+                        wait_input()
+                        continue
 
     class DownloadArchive:
         def __init__(self, config_file=ConfigPath().get() + "master_config.json"):
@@ -427,19 +536,10 @@ class YTConfig:
     class Bool:
         def __init__(self, config_file=ConfigPath().get() + "master_config.json"):
             self.config_file = config_file
-            self.custom_file = ConfigPath().get() + "custom_bools.json"
-
-        # def get_custom(self):
-        #     try:
-        #         return Json.decode(self.custom_file)
-        #     except FileNotFoundError:
-        #         Json.encode(, self.custom_file)
-        #         return self.get_custom()
 
         def handler(self):
             while True:
                 config = YTConfig(self.config_file).get()
-                # custom = self.get_custom()
 
                 clear()
                 print(color.red(color.bold("------------------------OTHER-OPTIONS-----------------------")))
@@ -451,15 +551,6 @@ class YTConfig:
                     bool_count += 1
                     print(color.yellow(color.bold(str(bool_count))) + ") %s : %s" % (option, config[option]))
                     bool_dict[str(bool_count)] = option
-                # print(color.red(color.bold("---------------------------CUSTOM---------------------------")))
-                # custom_bool_count = 0
-                # custom_bool_dict = dict()
-                # for bool in custom:
-                #     if not isinstance(config[option], bool):
-                #         continue
-                #     bool_count += 1
-                #     print(color.yellow(color.bold(str(bool_count))) + ") %s : %s" % (option, config[option]))
-                #     bool_dict[str(bool_count)] = option
                 print(enter_to_return())
                 bool_choice = str(input(">:"))
                 if bool_choice == "":
@@ -640,7 +731,7 @@ class YTConfig:
         }
         Json.encode(youtube_default_config, self.config_file)
 
-    def config_handler(self):
+    def handler(self):
         while True:
             clear()
             print(color.red(color.bold("----------------------DOWNLOAD-OPTIONS----------------------")))
@@ -675,6 +766,7 @@ class YTConfig:
                 if reset_choice in affirmative_choice:
                     self.make_default()
             else:
+                clear()
                 wait_input()
                 continue
 
@@ -683,6 +775,7 @@ class YTConfig:
     #                                "These options will be the default for new groups and for non-group downloads."
     #                                "This will not effect or overwrite existing group options.")))
     #     wait_input()
+
 
 class Base64:
     @staticmethod
@@ -1269,7 +1362,7 @@ def groups_handler():
                         current_group["name"] = new_name
                         groups.update_json(current_groups)
                     elif group_action == "5":
-                        group_ytconfig.config_handler()
+                        group_ytconfig.handler()
                     else:
                         clear()
                         wait_input()
@@ -1676,7 +1769,7 @@ if __name__ == "__main__":
 
         except ValueError:  # if the int() parser cant convert, raises a ValueError, this take care if it
             if choice.lower() == "conf":
-                ytconfig.config_handler()
+                ytconfig.handler()
                 continue
 
             elif choice.lower() == "path":
