@@ -8,7 +8,6 @@
 #
 # TODO: re-make README.md
 # TODO: make a list of all possible bit sizes for the user to choose from
-# TODO: add filters to download option <-
 # TODO: make shortcuts
 
 # import tarfile
@@ -735,7 +734,6 @@ class YTConfig:
                     clear()
                     wait_input()
                     continue
-
 
     class PostProcessing:
         def __init__(self, config_file=ConfigPath().get() + "master_config.json"):
