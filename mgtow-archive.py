@@ -654,26 +654,32 @@ class YTConfig:
                         print(enter_to_return())
                         print(color.yellow(color.bold("Current: %s" % str(current_filters["daterange"]))))
                         print("\nThe format is: $Y$M$D.\ne.g.: march 30 of 2010 would be '20100330'")
+                        print("Type 'none' to reset.")
                         print("Type the %s." % color.yellow(color.bold("start date")))
                         start_date = str(input(">:"))
                         print("Type the %s." % color.yellow(color.bold("end date")))
                         end_date = str(input(">:"))
-                        if start_date and end_date != "":
-                            try:
-                                daterange = youtube_dl.DateRange(start=start_date, end=end_date)
-                            except ValueError:
-                                clear()
-                                print("Error, check:"
-                                      "\n   The start date must be before the end date."
-                                      "\n   The input did not match the format.")
-                                wait_input()
-                                continue
-                            current_config["daterange_start"] = start_date
-                            current_config["daterange_end"] = end_date
+                        if start_date == "none" or end_date == "none":
+                            del current_config["daterange_start"]
+                            del current_config["daterange_end"]
                             YTConfig(self.config_file).update(current_config)
                             break
-                        else:
+                        if start_date == "" or end_date == "":
                             break
+                        try:
+                            daterange = youtube_dl.DateRange(start=start_date, end=end_date)
+                        except ValueError:
+                            clear()
+                            print("Error, check:"
+                                  "\n   The start date must be before the end date."
+                                  "\n   The input did not match the format.")
+                            wait_input()
+                            continue
+                        current_config["daterange_start"] = start_date
+                        current_config["daterange_end"] = end_date
+                        YTConfig(self.config_file).update(current_config)
+                        break
+
 
                 elif filters_choice == "4":
                     clear()
@@ -848,6 +854,8 @@ class YTConfig:
     def update(self, new_config):
         if "logger" in new_config.keys():
             del new_config["logger"]
+        if "daterange" in new_config.keys():
+            del new_config["daterange"]
         Json.encode(new_config, self.config_file)
 
     def make_default(self):
