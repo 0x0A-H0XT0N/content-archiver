@@ -572,7 +572,170 @@ class YTConfig:
                 return True
 
     class Filters:
-        pass
+        def __init__(self, config_file=ConfigPath().get() + "master_config.json"):
+            self.config_file = config_file
+            self.filters = ["matchtitle", "rejecttitle", "daterange", "min_views", 'max_views']
+
+        def get(self):
+            current = YTConfig(self.config_file).get()
+            filters = dict()
+            for filter_name in self.filters:
+                try:
+                    filters[filter_name] = current[filter_name]
+                except KeyError:
+                    filters[filter_name] = None
+            return filters
+
+        def handler(self):
+            while True:
+                current_config = YTConfig(self.config_file).get()
+                current_filters = self.get()
+                clear()
+                print(color.red(color.bold("---------------------------FILTERS--------------------------")))
+                print(color.yellow(color.bold("1")) + ") Match title: Download only matching titles")
+                print(color.yellow(color.bold("2")) + ") Reject title: Reject downloads for matching titles")
+                print(color.yellow(color.bold("3")) + ") Date range: Download only if the upload date is in the range")
+                print(color.yellow(color.bold("4")) + ") Min views: Minimum of views the video should have to be "
+                                                      "downloaded. Videos without view count information are always "
+                                                      "downloaded.")
+                print(color.yellow(color.bold("5")) + ") Max views: Maximum of views the video can have to be "
+                                                      "downloaded. Videos without view count information are always "
+                                                      "downloaded.")
+                print(enter_to_return())
+                filters_choice = str(input(">:"))
+
+                if filters_choice == "":
+                    break
+                elif filters_choice == "1":
+                    clear()
+                    print(color.red(color.bold("-------------------------MATCH-TITLE------------------------")))
+                    print(enter_to_return())
+                    print(color.yellow(color.bold("Current: %s" % current_filters["matchtitle"])))
+                    print("Type the matching title, 'none' for no filter.")
+                    new_filter = str(input(">:"))
+                    if new_filter == "":
+                        continue
+                    if new_filter == "none":
+                        if current_filters["matchtitle"] is not None:
+                            del current_config["matchtitle"]
+                            YTConfig(self.config_file).update(current_config)
+                            continue
+                        else:
+                            continue
+                    else:
+                        current_config["matchtitle"] = new_filter
+                        YTConfig(self.config_file).update(current_config)
+                        continue
+
+                elif filters_choice == "2":
+                    clear()
+                    print(color.red(color.bold("------------------------REJECT-TITLE-----------------------")))
+                    print(enter_to_return())
+                    print(color.yellow(color.bold("Current: %s" % current_filters["rejecttitle"])))
+                    print("Type the rejecting title, 'none' for no filter.")
+                    new_filter = str(input(">:"))
+                    if new_filter == "":
+                        continue
+                    if new_filter == "none":
+                        if current_filters["rejecttitle"] is not None:
+                            del current_config["rejecttitle"]
+                            YTConfig(self.config_file).update(current_config)
+                            continue
+                        else:
+                            continue
+                    else:
+                        current_config["rejecttitle"] = new_filter
+                        YTConfig(self.config_file).update(current_config)
+                        continue
+
+                elif filters_choice == "3":
+                    while True:
+                        clear()
+                        print(color.red(color.bold("-------------------------DATE-RANGE-------------------------")))
+                        print(enter_to_return())
+                        print(color.yellow(color.bold("Current: %s" % str(current_filters["daterange"]))))
+                        print("\nThe format is: $Y$M$D.\ne.g.: march 30 of 2010 would be '20100330'")
+                        print("Type the %s." % color.yellow(color.bold("start date")))
+                        start_date = str(input(">:"))
+                        print("Type the %s." % color.yellow(color.bold("end date")))
+                        end_date = str(input(">:"))
+                        if start_date and end_date != "":
+                            try:
+                                daterange = youtube_dl.DateRange(start=start_date, end=end_date)
+                            except ValueError:
+                                clear()
+                                print("Error, check:"
+                                      "\n   The start date must be before the end date."
+                                      "\n   The input did not match the format.")
+                                wait_input()
+                                continue
+                            current_config["daterange_start"] = start_date
+                            current_config["daterange_end"] = end_date
+                            YTConfig(self.config_file).update(current_config)
+                            break
+                        else:
+                            break
+
+                elif filters_choice == "4":
+                    clear()
+                    print(color.red(color.bold("--------------------------MIN-VIEWS-------------------------")))
+                    print(enter_to_return())
+                    print(color.yellow(color.bold("Current: %s" % str(current_filters["min_views"]))))
+                    print("Type the minimum of views, 'none' for no filter.")
+                    new_filter = str(input(">:"))
+                    if new_filter == "":
+                        continue
+                    if new_filter == "none":
+                        if current_filters["min_views"] is not None:
+                            del current_config["min_views"]
+                            YTConfig(self.config_file).update(current_config)
+                            continue
+                        else:
+                            continue
+                    else:
+                        try:
+                            int_new_filter = int(new_filter)
+                        except ValueError:
+                            clear()
+                            print("Only numbers are accepted.")
+                            wait_input()
+                            continue
+                        current_config["min_views"] = int_new_filter
+                        YTConfig(self.config_file).update(current_config)
+                        continue
+                elif filters_choice == "5":
+                    clear()
+                    print(color.red(color.bold("--------------------------MAX-VIEWS-------------------------")))
+                    print(enter_to_return())
+                    print(color.yellow(color.bold("Current: %s" % str(current_filters["max_views"]))))
+                    print("Type the maximum of views, 'none' for no filter.")
+                    new_filter = str(input(">:"))
+                    if new_filter == "":
+                        continue
+                    if new_filter == "none":
+                        if current_filters["max_views"] is not None:
+                            del current_config["max_views"]
+                            YTConfig(self.config_file).update(current_config)
+                            continue
+                        else:
+                            continue
+                    else:
+                        try:
+                            int_new_filter = int(new_filter)
+                        except ValueError:
+                            clear()
+                            print("Only numbers are accepted.")
+                            wait_input()
+                            continue
+                        current_config["max_views"] = int_new_filter
+                        YTConfig(self.config_file).update(current_config)
+                        continue
+
+                else:
+                    clear()
+                    wait_input()
+                    continue
+
 
     class PostProcessing:
         def __init__(self, config_file=ConfigPath().get() + "master_config.json"):
@@ -667,7 +830,7 @@ class YTConfig:
         self.config_file = config_file
         self.config = self.get()
 
-    def get(self, dl_archive=True, logger=True):
+    def get(self, daterange=True, logger=True, dl_archive=True):
         try:
             config = Json.decode(self.config_file)
         except FileNotFoundError:
@@ -678,6 +841,10 @@ class YTConfig:
                 config['logger'] = Logger()
             if not dl_archive:
                 del config["download_archive"]
+            if daterange:
+                if "daterange_start" and "daterange_end" in config.keys():
+                    config["daterange"] = youtube_dl.DateRange(start=config["daterange_start"],
+                                                               end=config["daterange_end"])
             return config
 
     def update(self, new_config):
@@ -690,14 +857,8 @@ class YTConfig:
         youtube_default_config = {
             # POST PROCESSING
             'postprocessors':   [],
-            # FILTERS
-            'matchtitle': None,
-            'rejecttitle': None,
-            'daterange': None,
-            'min_views': None,
-            'max_views': None,
             # USER DEFINED
-            'download_archive': dl_path + "download_archive_mp4",
+            'download_archive': ConfigPath().get() + "download_archives/download_archive_mp4",
             'format': "mp4[height=720]/mp4[height<720]/mp4",  # Video format code. See yt-dl for more info.
             'outtmpl': dl_path + '%(uploader)s/%(title)s.%(ext)s',
             # BOOLS
@@ -754,7 +915,7 @@ class YTConfig:
             elif download_options_choice == "archive":
                 self.DownloadArchive(self.config_file).handler()
             elif download_options_choice == "filters":
-                pass    # TODO
+                self.Filters(self.config_file).handler()
             elif download_options_choice == "embed":
                 self.PostProcessing(self.config_file).handler()
             elif download_options_choice == "reset":
