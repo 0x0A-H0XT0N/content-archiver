@@ -1282,9 +1282,14 @@ def download_choice():
     """
     clear()
     print(color.red(color.bold("--------------------------DOWNLOAD--------------------------")))
+
+    global warnings
+    global errors
+    warnings = 0
+    errors = []
+
     videos_lst = []
     video_url = str(input("Type the URL to download.\n" + enter_to_return() + "\n>:"))
-
     if video_url == "":
         clear()
         return
@@ -1322,6 +1327,8 @@ def download_choice():
         print(color.red(color.bold("\n   Download fished with %s errors..." % str(len(errors)))))
         for error in errors:
             print(color.red(color.bold(error)))
+    warnings = 0
+    errors = []
 
     if organizer.get_sort_type() == "sort_by_type":
         print(color.yellow(color.bold("\n Applying sorting type...")))
@@ -1406,6 +1413,10 @@ def groups_handler():
                     elif group_action == "1":
                         clear()
                         print(color.red(color.bold("-----------------------DOWNLOAD-GROUP-----------------------")))
+                        global warnings
+                        global errors
+                        warnings = 0
+                        errors = []
                         if len(current_group["channels"]) == 0:
                             print("No channel to download")
                             wait_input()
@@ -1441,6 +1452,9 @@ def groups_handler():
                             print(color.red(color.bold("\n   Download fished with %s errors..." % str(len(errors)))))
                             for error in errors:
                                 print(color.red(color.bold(error)))
+                        warnings = 0
+                        errors = []
+
 
                         if organizer.get_sort_type() == "sort_by_type":
                             print(color.yellow(color.bold("\n Applying sorting type...")))
