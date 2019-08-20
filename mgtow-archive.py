@@ -15,8 +15,6 @@ import json
 import signal
 import sys
 import os
-import tty
-import termios
 from fnmatch import fnmatch
 import base64
 from datetime import datetime
@@ -29,10 +27,15 @@ from dottorrent import Torrent
 from pathlib import Path
 from time import sleep, process_time
 
+if "win" in sys.platform.lower():
+    import msvcrt
+elif "linux" in sys.platform.lower():
+    import termios
+    import tty
+    original_stdin_settings = termios.tcgetattr(sys.stdin)
+
 affirmative_choice = ["y", "Y", "yes", "s", "sim", "yeah", "yah", "ya"]  # affirmative choices, user input detection
 negative_choice = ["n", "no", "nao", "na", "nop", "nah"]  # negative choices, user input detection
-
-original_stdin_settings = termios.tcgetattr(sys.stdin)
 
 download_archive = True
 
@@ -124,8 +127,10 @@ class Json:
 
 class ConfigPath:
     def __init__(self):
-        self.home = str(Path.home())
-        self.config_path = self.home + "/.config/mgtow-archive/"
+        if "win" in sys.platform.lower():
+            self.config_path = str(Path.home()) + "\.mgtowArchive\\"
+        if "linux" in sys.platform.lower():
+            self.config_path = str(Path.home()) + "/.config/mgtow-archive/"
 
     def get(self):
         if not os.path.exists(self.config_path):  # check if config dir exists
@@ -233,6 +238,10 @@ class YTConfig:
     class DownloadPath:
         def __init__(self, config_file=ConfigPath().get() + "path.json"):
             self.config_file = config_file
+            if "win" in sys.platform.lower():
+                self.default_path = str(Path.home()) + "\Videos\\MGTOW Archive\\"
+            if "linux" in sys.platform.lower():
+                self.default_path = str(Path.home()) + "/mgtow-archive/"
 
         def get(self):
             """
@@ -262,9 +271,9 @@ class YTConfig:
 
             if path_name == "":  # if user input is blank,
                 clear()
-                if not os.path.exists(str(Path.home())):  # check if user home exists,
-                    os.makedirs(str(Path.home()))  # if not, create it
-                Json.encode(str(Path.home()) + "/",
+                if not os.path.exists(self.default_path):  # check if user home exists,
+                    os.makedirs(self.default_path)  # if not, create it
+                Json.encode(self.default_path,
                             self.config_file)
                 # encode JSON file containing the path (home path in this case)
 
@@ -272,11 +281,16 @@ class YTConfig:
                 clear()
                 if not os.path.exists(path_name):  # check if user input path exists
                     os.makedirs(path_name)  # if not, create it
-                Json.encode(path_name + "/", self.config_file)
+                if "win" in sys.platform.lower():
+                    Json.encode(path_name + "\\", self.config_file)
+                if "linux" in sys.platform.lower():
+                    Json.encode(path_name + "/", self.config_file)
+
                 # encode JSON file containing the user path
 
             clear()
-            print("The program need to be restarted for the changes take effect. Exiting...")
+            print("The program need to be restarted for the changes take effect.")
+            wait_input()
             sys.exit(0)
 
         def set(self):
@@ -679,7 +693,6 @@ class YTConfig:
                         current_config["daterange_end"] = end_date
                         YTConfig(self.config_file).update(current_config)
                         break
-
 
                 elif filters_choice == "4":
                     clear()
@@ -1143,10 +1156,10 @@ def clear():
     :return: a clean screen :)
     """
 
-    if os.name == "nt":
+    if "win" in sys.platform.lower():
         os.system('cls')
 
-    else:
+    if "linux" in sys.platform.lower():
         os.system('clear')
 
 
@@ -1172,13 +1185,19 @@ def wait_input():
     this function will detect any key press, until that happens, the program will wait
     """
     print("Press " + color.yellow(color.bold("any key")) + " to continue...")
-    tty.setcbreak(sys.stdin)  # set "stdin" in raw mode, no line buffering from here
-    user_input = None  # used to control while loop, the user input will be None,
-    # if the user input changes, the while loop should be broken
-    while user_input is None:  # while the user input is None (e.i. no key press detect on "stdin"), wait...
-        user_input = sys.stdin.read(1)[0]  # this will be reading "stdin" until a key is detected
-        clear()  # this will only be reached when a key is detected, until that happens, this will not be reached
-    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, original_stdin_settings)  # set "stdin" to default (no raw input)
+    if "win" in sys.platform.lower():
+        while True:
+            if msvcrt.kbhit():
+                clear()
+                break
+    elif "linux" in sys.platform.lower():
+        tty.setcbreak(sys.stdin)  # set "stdin" in raw mode, no line buffering from here
+        user_input = None  # used to control while loop, the user input will be None,
+        # if the user input changes, the while loop should be broken
+        while user_input is None:  # while the user input is None (e.i. no key press detect on "stdin"), wait...
+            user_input = sys.stdin.read(1)[0]  # this will be reading "stdin" until a key is detected
+            clear()  # this will only be reached when a key is detected, until that happens, this will not be reached
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, original_stdin_settings)  # set "stdin" to default (no raw input)
 
 
 def enter_to_return():
