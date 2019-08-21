@@ -1321,16 +1321,13 @@ def download_choice():
                 else:
                     videos_lst.append(video_url)
 
-        # use_download_archive = str(input("\nUse the download archive file for not repeating downloads? [Y/n]"))
-        # if use_download_archive in negative_choice:
-        #     global download_archive
-        #     download_archive = False
-        #     del youtube_config["download_archive"]
-
     clear()
     print(color.yellow(color.bold("CTRL + C")) +
           " to cancel download.\n")
     sleep(0.5)
+
+    global warnings
+    global errors
 
     for url in videos_lst:
         youtube_download(url)
@@ -1341,6 +1338,9 @@ def download_choice():
         print(color.red(color.bold("\n   Download fished with %s errors..." % str(len(errors)))))
         for error in errors:
             print(color.red(color.bold(error)))
+
+    warnings = 0
+    errors = []
 
     if organizer.get_sort_type() == "sort_by_type":
         print(color.yellow(color.bold("\n Applying sorting type...")))
@@ -1440,6 +1440,10 @@ def groups_handler():
                         print(color.yellow(color.bold("CTRL + C")) + " to cancel download.")
                         sleep(0.5)
                         channel_count = 0
+
+                        global warnings
+                        global errors
+
                         for channel in current_group["channels"]:
                             channel_count += 1
                             print("     \nChannel %d of %d" % (channel_count, len(current_group["channels"])))
@@ -1460,6 +1464,9 @@ def groups_handler():
                             print(color.red(color.bold("\n   Download fished with %s errors..." % str(len(errors)))))
                             for error in errors:
                                 print(color.red(color.bold(error)))
+
+                        warnings = 0
+                        errors = []
 
                         if organizer.get_sort_type() == "sort_by_type":
                             print(color.yellow(color.bold("\n Applying sorting type...")))
