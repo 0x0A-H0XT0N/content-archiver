@@ -1255,6 +1255,7 @@ def get_channel_size(channel_path):
             channel_size += os.path.getsize(f)
     return channel_size
 
+
 def set_sorting_type():
     clear()
     organizer.get_sort_type()
