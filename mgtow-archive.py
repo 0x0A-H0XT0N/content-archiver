@@ -10,22 +10,20 @@
 # TODO: make a list of all possible bit sizes for the user to choose from
 # TODO: make shortcuts
 
-# import tarfile
+import base64
 import json
+import os
 import signal
 import sys
-import os
-from fnmatch import fnmatch
-import base64
 from datetime import datetime
-
-import youtube_dl
-from colorama import Fore, init
-import qbittorrentapi
-from dottorrent import Torrent
-
+from fnmatch import fnmatch
 from pathlib import Path
 from time import sleep, process_time
+
+import qbittorrentapi
+import youtube_dl
+from colorama import Fore, init
+from dottorrent import Torrent
 
 if "win" in sys.platform.lower():
     import msvcrt
