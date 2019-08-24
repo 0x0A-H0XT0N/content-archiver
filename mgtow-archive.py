@@ -85,12 +85,12 @@ class Logger(object):
     def warning(msg):
         global warnings
         warnings += 1
+        print(color.red(color.bold(msg)))
 
     @staticmethod
     def error(msg):
         global errors
         errors.append(color.red(color.bold(str(msg))))
-
         print(color.red(color.bold(msg)))
 
 
