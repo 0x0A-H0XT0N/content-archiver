@@ -880,7 +880,6 @@ class YTConfig:
             'outtmpl': dl_path + '%(uploader)s/%(title)s.%(ext)s',
             # BOOLS
             'restrictfilenames': True,  # Do not allow "&" and spaces in file names
-            'no_warnings': True,    # Do not print out anything for warnings.
             'ignoreerrors': True,   # Do not stop on download errors.
             'nooverwrites': True,   # Prevent overwriting files.
             'writedescription': True,   # Write the video description to a .description file
@@ -889,10 +888,11 @@ class YTConfig:
             'writeautomaticsub': True,  # Write the automatically generated subtitles to a file
             'writeannotations': True,   # Write video annotations
             'prefer_ffmpeg': True,      # Prefer ffmpeg for post processing
-            'keepvideo': False,     # Keep post processing video files
+            'keepvideo': True,  # Keep post processing video files
             'verbose': False,   # Print additional info to stdout.
             'quiet': False,     # Do not print messages to stdout.
             'simulate': False,  # Do not download the video files.
+            'no_warnings': False,  # Do not print out anything for warnings.
             'skip_download': False,     # Skip the actual download of the video file
             'noplaylist': False,    # Download single video instead of a playlist if in doubt.
             'playlistrandom': False,    # Download playlist items in random order.
