@@ -1450,8 +1450,8 @@ def groups_handler():
                             print("     URL: %s" % current_group["channels"][channel])
                             print()
                             sleep(0.25)
-                        youtube_download(current_group["channels"][channel],
-                                         youtube_config=YTConfig(current_group["config_path"]).get())
+                            youtube_download(current_group["channels"][channel],
+                                             youtube_config=YTConfig(current_group["config_path"]).get())
 
                         print("Updating last download date to: %s" % str(datetime.now().replace(microsecond=0)))
                         current_group["last_download"] = str(datetime.now().replace(microsecond=0))
