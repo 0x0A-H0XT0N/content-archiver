@@ -154,7 +154,7 @@ class Organizer:
         try:
             return Json.decode(ConfigPath().get() + "sort_type.json")
         except FileNotFoundError:
-            self.sort_by_type(download_path)
+            self.all_in_one(download_path)
             return Json.decode(ConfigPath().get() + "sort_type.json")
 
     def sort_by_type(self, root_path):
