@@ -1416,6 +1416,7 @@ def download_choice():
     wait_input()
     return
 
+
 def groups_handler():
     while True:
         clear()
