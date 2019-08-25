@@ -166,32 +166,98 @@ class Organizer:
                     if fnmatch(file, "*.tar.gz"):
                         pass
                     elif fnmatch(file, "*.jpg"):
-                        os.rename(absolute_file_path, channel + "/thumbnails/" + file)
+                        try:
+                            os.rename(absolute_file_path, channel + "/thumbnails/" + file)
+                        except FileExistsError:
+                            print("Detected duped file...\n"
+                                  "File %s already exists in %s\n"
+                                  "Not moving the file anymore, please manually delete the file."
+                                  % (absolute_file_path, channel + "/thumbnails/" + file))
                     elif fnmatch(file, "*.description"):
-                        os.rename(absolute_file_path, channel + "/descriptions/" + file)
+                        try:
+                            os.rename(absolute_file_path, channel + "/descriptions/" + file)
+                        except FileExistsError:
+                            print("Detected duped file...\n"
+                                  "File %s already exists in %s\n"
+                                  "Not moving the file anymore, please manually delete the file."
+                                  % (absolute_file_path, channel + "/thumbnails/" + file))
                     elif fnmatch(file, "*.info.json"):
-                        os.rename(absolute_file_path, channel + "/metadata/" + file)
+                        try:
+                            os.rename(absolute_file_path, channel + "/metadata/" + file)
+                        except FileExistsError:
+                            print("Detected duped file...\n"
+                                  "File %s already exists in %s\n"
+                                  "Not moving the file anymore, please manually delete the file."
+                                  % (absolute_file_path, channel + "/thumbnails/" + file))
                     elif fnmatch(file, "*.annotations.xml"):
-                        os.rename(absolute_file_path, channel + "/annotations/" + file)
+                        try:
+                            os.rename(absolute_file_path, channel + "/annotations/" + file)
+                        except FileExistsError:
+                            print("Detected duped file...\n"
+                                  "File %s already exists in %s\n"
+                                  "Not moving the file anymore, please manually delete the file."
+                                  % (absolute_file_path, channel + "/thumbnails/" + file))
                     elif fnmatch(file, "*.mp4"):
-                        os.rename(absolute_file_path, channel + "/videos/" + file)
+                        try:
+                            os.rename(absolute_file_path, channel + "/videos/" + file)
+                        except FileExistsError:
+                            print("Detected duped file...\n"
+                                  "File %s already exists in %s\n"
+                                  "Not moving the file anymore, please manually delete the file."
+                                  % (absolute_file_path, channel + "/thumbnails/" + file))
                     if fnmatch(file, "*.vtt"):
-                        os.rename(absolute_file_path, channel + "/subtitles/" + file)
+                        try:
+                            os.rename(absolute_file_path, channel + "/subtitles/" + file)
+                        except FileExistsError:
+                            print("Detected duped file...\n"
+                                  "File %s already exists in %s\n"
+                                  "Not moving the file anymore, please manually delete the file."
+                                  % (absolute_file_path, channel + "/thumbnails/" + file))
                     elif fnmatch(file, "*.webm"):
-                        os.rename(absolute_file_path, channel + "/videos/" + file)
+                        try:
+                            os.rename(absolute_file_path, channel + "/videos/" + file)
+                        except FileExistsError:
+                            print("Detected duped file...\n"
+                                  "File %s already exists in %s\n"
+                                  "Not moving the file anymore, please manually delete the file."
+                                  % (absolute_file_path, channel + "/thumbnails/" + file))
                     elif fnmatch(file, "*.m4a"):
-                        os.rename(absolute_file_path, channel + "/videos/" + file)
+                        try:
+                            os.rename(absolute_file_path, channel + "/videos/" + file)
+                        except FileExistsError:
+                            print("Detected duped file...\n"
+                                  "File %s already exists in %s\n"
+                                  "Not moving the file anymore, please manually delete the file."
+                                  % (absolute_file_path, channel + "/thumbnails/" + file))
                     elif fnmatch(file, "*.mp3"):
-                        os.rename(absolute_file_path, channel + "/videos/" + file)
+                        try:
+                            os.rename(absolute_file_path, channel + "/videos/" + file)
+                        except FileExistsError:
+                            print("Detected duped file...\n"
+                                  "File %s already exists in %s\n"
+                                  "Not moving the file anymore, please manually delete the file."
+                                  % (absolute_file_path, channel + "/thumbnails/" + file))
                     elif fnmatch(file, "*.opus"):
-                        os.rename(absolute_file_path, channel + "/videos/" + file)
+                        try:
+                            os.rename(absolute_file_path, channel + "/videos/" + file)
+                        except FileExistsError:
+                            print("Detected duped file...\n"
+                                  "File %s already exists in %s\n"
+                                  "Not moving the file anymore, please manually delete the file."
+                                  % (absolute_file_path, channel + "/thumbnails/" + file))
                     elif fnmatch(file, "*.mkv"):
-                        os.rename(absolute_file_path, channel + "/videos/" + file)
+                        try:
+                            os.rename(absolute_file_path, channel + "/videos/" + file)
+                        except FileExistsError:
+                            print("Detected duped file...\n"
+                                  "File %s already exists in %s\n"
+                                  "Not moving the file anymore, please manually delete the file."
+                                  % (absolute_file_path, channel + "/thumbnails/" + file))
                     elif fnmatch(file, "*.torrent"):
                         pass
                 elif os.path.isdir(absolute_file_path):
-                    # handle?
-                    pass
+                    print("Detected Folder: %s"
+                          "Not moving the folder..." % absolute_file_path)
         Json.encode("sort_by_type", ConfigPath().get() + "sort_type.json")
 
     def all_in_one(self, root_path):
