@@ -266,7 +266,13 @@ class Organizer:
                 absolute_folder_path = channel + "/" + folder
                 if os.path.isdir(absolute_folder_path) and folder in sorted_folders_names:
                     for file in os.listdir(absolute_folder_path):
-                        os.rename(absolute_folder_path + "/" + file, channel + "/" + file)
+                        try:
+                            os.rename(absolute_folder_path + "/" + file, channel + "/" + file)
+                        except FileExistsError:
+                            print("Duped file detected..."
+                                  "File %s already found at %s."
+                                  "Adding '_' at the end of the file.")
+                            os.rename(absolute_folder_path + "/" + file, channel + "/" + file + "_")
             self.remove_folder_sorted_directories(channel + "/")
         Json.encode("all_in_one", ConfigPath().get() + "sort_type.json")
 
