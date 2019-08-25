@@ -951,6 +951,8 @@ class YTConfig:
             'download_archive': ConfigPath().get() + "download_archives/download_archive_mp4",
             'format': "mp4[height=720]/mp4[height<720]/mp4",  # Video format code. See yt-dl for more info.
             'outtmpl': dl_path + '%(uploader)s/%(title)s.%(ext)s',
+            # DOWNLOADER OPTIONS
+            'retries':  10,
             # BOOLS
             'restrictfilenames': True,  # Do not allow "&" and spaces in file names
             'ignoreerrors': True,   # Do not stop on download errors.
