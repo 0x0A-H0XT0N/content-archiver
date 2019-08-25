@@ -1414,7 +1414,7 @@ def download_choice():
 
     print()
     wait_input()
-
+    return
 
 def groups_handler():
     while True:
