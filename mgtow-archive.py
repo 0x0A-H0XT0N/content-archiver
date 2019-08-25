@@ -256,8 +256,9 @@ class Organizer:
                     elif fnmatch(file, "*.torrent"):
                         pass
                 elif os.path.isdir(absolute_file_path):
-                    print("Detected Folder: %s"
-                          "Not moving the folder..." % absolute_file_path)
+                    if file not in sorted_folders_names:
+                        print("\nDetected Folder: %s\n"
+                              "Not moving the folder..." % absolute_file_path)
         Json.encode("sort_by_type", ConfigPath().get() + "sort_type.json")
 
     def all_in_one(self, root_path):
