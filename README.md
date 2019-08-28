@@ -24,19 +24,25 @@ The program has [torrent integration](#torrent-integration) with, which helps to
 **Remember: You can download any type of content you want, but the idea of the project is to store MGTOW videos.**
 
 # INSTALLATION
-The program is available to Windows and Linux.
+The program is available to Windows, Linux and MacOS.
 
-To install the program, you will need Python3.5+ and the following dependencies:
+To install the program, you will need [Python3.5+](https://www.python.org/downloads/) and the following dependencies:
 * [youtube-dl](https://github.com/ytdl-org/youtube-dl)
 * [qbittorrent-api](https://pypi.org/project/qbittorrent-api/)
 * [dottorrent](https://dottorrent.readthedocs.io/en/latest/install.html)
 * [colorama](https://github.com/tartley/colorama)
 
-You can use the following command to install the dependencies using _requirements.txt_:
+You can the following command to install all dependencies:
+```
+pip install qbittorrent-api dottorrent colorama youtube-dl
+```
+
+Alternatively, ou can use the following command to install the dependencies using _requirements.txt_:
 ```
 pip install -r requirements.txt
 ```
 
+**Note that depending on your OS, "pip" can be "pip3".**
 
 # DOWNLOAD OPTIONS
 
