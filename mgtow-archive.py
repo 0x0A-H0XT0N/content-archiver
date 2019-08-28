@@ -27,7 +27,7 @@ from dottorrent import Torrent
 
 if "win" in sys.platform.lower():
     import msvcrt
-elif "linux" in sys.platform.lower():
+else:
     import termios
     import tty
     original_stdin_settings = termios.tcgetattr(sys.stdin)
@@ -127,7 +127,7 @@ class ConfigPath:
     def __init__(self):
         if "win" in sys.platform.lower():
             self.config_path = str(Path.home()) + "\.mgtowArchive\\"
-        if "linux" in sys.platform.lower():
+        else:
             self.config_path = str(Path.home()) + "/.config/mgtow-archive/"
 
     def get(self):
@@ -311,7 +311,7 @@ class YTConfig:
             self.config_file = config_file
             if "win" in sys.platform.lower():
                 self.default_path = str(Path.home()) + "\Videos\\MGTOW Archive\\"
-            if "linux" in sys.platform.lower():
+            else:
                 self.default_path = str(Path.home()) + "/mgtow-archive/"
 
         def get(self):
@@ -354,7 +354,7 @@ class YTConfig:
                     os.makedirs(path_name)  # if not, create it
                 if "win" in sys.platform.lower():
                     Json.encode(path_name + "\\", self.config_file)
-                if "linux" in sys.platform.lower():
+                else:
                     Json.encode(path_name + "/", self.config_file)
 
                 # encode JSON file containing the user path
@@ -1232,7 +1232,7 @@ def clear():
     if "win" in sys.platform.lower():
         os.system('cls')
 
-    if "linux" in sys.platform.lower():
+    else:
         os.system('clear')
 
 
@@ -1263,7 +1263,7 @@ def wait_input():
             if msvcrt.kbhit():
                 clear()
                 break
-    elif "linux" in sys.platform.lower():
+    else:
         tty.setcbreak(sys.stdin)  # set "stdin" in raw mode, no line buffering from here
         user_input = None  # used to control while loop, the user input will be None,
         # if the user input changes, the while loop should be broken

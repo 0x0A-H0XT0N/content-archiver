@@ -1,0 +1,4 @@
+qbittorrent-api
+dottorrent
+colorama
+youtube-dl

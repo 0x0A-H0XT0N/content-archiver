@@ -16,12 +16,26 @@ designed to download, store, update and share large quantities of youtube videos
 quantities of video can be downloaded just as easy. 
 
 By default, the program will download all the video information, which can be customized with your own needs 
-[here](#download-options). The goal is maintain all original information all be the closest as possible to the original video.
+[here](#download-options). The goal is to be the closest as possible to the original video and have all 
+information about it.
 
 The program has [torrent integration](#torrent-integration) with, which helps to share any content downloaded.
 
 **Remember: You can download any type of content you want, but the idea of the project is to store MGTOW videos.**
 
+# INSTALLATION
+The program is available to Windows and Linux.
+
+To install the program, you will need Python3.5+ and the following dependencies:
+* [youtube-dl](https://github.com/ytdl-org/youtube-dl)
+* [qbittorrent-api](https://pypi.org/project/qbittorrent-api/)
+* [dottorrent](https://dottorrent.readthedocs.io/en/latest/install.html)
+* [colorama](https://github.com/tartley/colorama)
+
+You can use the following command to install the dependencies using _requirements.txt_:
+```
+pip install -r requirements.txt
+```
 
 
 # DOWNLOAD OPTIONS
