@@ -1521,11 +1521,16 @@ def groups_handler():
 
                         for channel in current_group["channels"]:
                             channel_count += 1
-                            print("     \nChannel %d of %d" % (channel_count, len(current_group["channels"])))
-                            print("     Channel: %s" % channel)
-                            print("     URL: %s" % current_group["channels"][channel])
                             print()
-                            sleep(0.25)
+                            print(color.red(color.bold("------------------------------------------------------------")))
+                            print()
+                            print(color.yellow(color.bold("     Channel %s of %s" % (str(channel_count), str(len(current_group["channels"]))))))
+                            print(color.yellow(color.bold("     Channel: %s" % channel)))
+                            print(color.yellow(color.bold("     URL: %s" % current_group["channels"][channel])))
+                            print()
+                            print(color.red(color.bold("------------------------------------------------------------")))
+                            print()
+                            sleep(0.5)
                             youtube_download(current_group["channels"][channel],
                                              youtube_config=YTConfig(current_group["config_path"]).get())
 
