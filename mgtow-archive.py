@@ -1243,12 +1243,13 @@ def signal_handler(signal, frame):
     :param frame:
     :return: prints a blank line and exit
     """
-    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, original_stdin_settings)
-    # this line is somewhat useful if the user exit during the "press any key" thing,
-    # because the "stdin" will be set to raw mode, if the user hit CTRL + C, the
-    # terminal stays in raw mode, with he will be stuck, using this line, if the user
-    # hit CTRL + C, the "stdin" will be restored (using the original_stdin_settings variable)
-    # and he will not get stuck
+    if "win" not in sys.platform.lower():
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, original_stdin_settings)
+        # this line is somewhat useful if the user exit during the "press any key" thing,
+        # because the "stdin" will be set to raw mode, if the user hit CTRL + C, the
+        # terminal stays in raw mode, with he will be stuck, using this line, if the user
+        # hit CTRL + C, the "stdin" will be restored (using the original_stdin_settings variable)
+        # and he will not get stuck
     print("\n")
     sys.exit(0)
 
