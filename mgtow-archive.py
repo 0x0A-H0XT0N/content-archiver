@@ -1408,9 +1408,9 @@ def download_choice():
         youtube_download(url)
 
     if warnings >= 1:
-        print("\n   Download fished with %d warnings..." % warnings)
+        print("\n   Download finished with %d warnings..." % warnings)
     if len(errors) >= 1:
-        print(color.red(color.bold("\n   Download fished with %s errors..." % str(len(errors)))))
+        print(color.red(color.bold("\n   Download finished with %s errors..." % str(len(errors)))))
         for error in errors:
             print(color.red(color.bold(error)))
 
@@ -1540,9 +1540,9 @@ def groups_handler():
                         groups.update_json(current_groups)
 
                         if warnings >= 1:
-                            print("\n   Download fished with %d warnings..." % warnings)
+                            print("\n   Download finished with %d warnings..." % warnings)
                         if len(errors) >= 1:
-                            print(color.red(color.bold("\n   Download fished with %s errors..." % str(len(errors)))))
+                            print(color.red(color.bold("\n   Download finished with %s errors..." % str(len(errors)))))
                             for error in errors:
                                 print(color.red(color.bold(error)))
 
