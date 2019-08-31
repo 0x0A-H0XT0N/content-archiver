@@ -114,7 +114,21 @@ In "sort by type", the program organizes all files into subfolders, these subfol
 
 # TORRENT INTEGRATION
 
-.
+The program has torrent integration with QBittorrent v4.1+
+
+To enable it, you first need to enable the Web UI at:
+```
+QBittorrent > "Tools" > "Preferences" > "Web UI"
+```
+**NOTE: Enable the check box "Bypass authentication for clients on localhost" for better functionality.**
+
+The program can do these operations:
+- Create a torrent from a downloaded channel.
+- List mgtow-archive torrents (using tags).
+- Change authentication options.
+- Change trackers.
+
+All torrents created will be stored at its respective channels folders. These files will have the extension ".torrent"
 
 # FAQ
 
