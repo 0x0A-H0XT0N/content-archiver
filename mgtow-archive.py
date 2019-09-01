@@ -15,6 +15,8 @@ import json
 import os
 import signal
 import sys
+import getopt
+import threading
 from datetime import datetime
 from fnmatch import fnmatch
 from pathlib import Path
@@ -1222,6 +1224,34 @@ class Groups:
         return self.update_json(current)
 
 
+class Watch:
+    def __init__(self, group_name):
+        self.groups = groups.get()
+        self.threads = []
+        found = False
+        for group in self.groups:
+            if group["name"] == group_name:
+                self.group_index = self.groups.index(group)
+                self.group = group
+                self.group_config = YTConfig(self.group["config_path"]).get()
+                found = True
+                break
+        if not found:
+            raise SyntaxError("Group '%s' not found." % group_name)
+
+    def download(self, channel):
+        pass
+
+    def start(self):
+        print(color.yellow(color.bold("Found %s channels on the group." % str(len(self.group["channels"])))))
+        print(color.yellow(color.bold("Starting threads...")))
+        for channel in self.group["channels"]:
+            channel_thread = threading.Thread(target=self.download, args=channel, daemon=True)
+            self.threads.append(channel_thread)
+
+
+
+
 def clear():
     """
     check if the machine is windows or linux,
@@ -2026,6 +2056,12 @@ if __name__ == "__main__":
     download_path = YTConfig.DownloadPath().get()
     download_format = YTConfig.Format()
     groups = Groups()
+
+    if len(sys.argv) > 1:
+        options, arguments = getopt.getopt(sys.argv[1:], "w:", ["watch="])
+        for option, arguments in options:
+            if option == "-w" or "--watch":
+                Watch(arguments).start()
 
     while True:
         clear()

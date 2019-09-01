@@ -15,6 +15,8 @@ MGTOW Archive is a Multi OS, Python3 CLI program
 designed to download, store, update and share large quantities of youtube videos and channels. Keep in mind that small 
 quantities of video can be downloaded just as easy.
 
+This guide will introduce the not-so-obvious features, where to get help, customization, etc. 
+
 By default, the program will download all the video information, which can be customized with your own needs 
 [here](#download-options). The goal is to be the closest as possible to the original video and have all 
 information about it.
@@ -129,6 +131,8 @@ The program can do these operations:
 - Change trackers.
 
 All torrents created will be stored at its respective channels folders. These files will have the extension ".torrent"
+
+Created torrents will be automatically added to QBittorent,
 
 # FAQ
 
