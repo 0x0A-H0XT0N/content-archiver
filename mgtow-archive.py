@@ -6,7 +6,6 @@
 #  ╚═╝     ╚═╝ ╚═════╝   ╚═╝    ╚═════╝  ╚══╝╚══╝     ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝
 # https://github.com/PhoenixK7PB/mgtow-archive
 #
-# TODO: re-make README.md
 # TODO: make a list of all possible bit sizes for the user to choose from
 # TODO: make shortcuts
 
@@ -17,6 +16,7 @@ import signal
 import sys
 import getopt
 import threading
+from random import randint
 from datetime import datetime
 from fnmatch import fnmatch
 from pathlib import Path
@@ -1225,31 +1225,59 @@ class Groups:
 
 
 class Watch:
-    def __init__(self, group_name):
-        self.groups = groups.get()
+    def __init__(self, group_name, retries=99999):
         self.threads = []
+
         found = False
-        for group in self.groups:
+        for group in groups.get():
             if group["name"] == group_name:
-                self.group_index = self.groups.index(group)
                 self.group = group
-                self.group_config = YTConfig(self.group["config_path"]).get()
                 found = True
                 break
         if not found:
             raise SyntaxError("Group '%s' not found." % group_name)
 
-    def download(self, channel):
-        pass
+        self.group_config = YTConfig(self.group["config_path"]).get()
+        self.group_config["retries"] = retries
 
-    def start(self):
-        print(color.yellow(color.bold("Found %s channels on the group." % str(len(self.group["channels"])))))
-        print(color.yellow(color.bold("Starting threads...")))
+    def download(self, channel):
+        thread_name = threading.current_thread().name
+        count = 0
+        while True:
+            youtube_download(channel, self.group_config)
+            count += 1
+            print("[%s] Finished downloading... Sleeping and repeating..." % thread_name)
+            sleep(randint(60, 120))
+            print("[%s] Awaking up. Starting download %d." % (thread_name, count))
+
+    def create_threads(self):
         for channel in self.group["channels"]:
-            channel_thread = threading.Thread(target=self.download, args=channel, daemon=True)
+            channel_thread = threading.Thread(target=self.download, args=[self.group["channels"][channel]], daemon=True)
             self.threads.append(channel_thread)
 
+    def start_threads(self):
+        for thread in self.threads:
+            thread.start()
 
+    def waiting(self):
+        while True:
+            pass
+
+
+    def start(self):
+        print(color.red(color.bold("--------------------------------------------------")))
+        print(color.red(color.bold("|              USE CTRL + C TO EXIT              |")))
+        print(color.red(color.bold("--------------------------------------------------")))
+        sleep(2)
+        print(color.yellow(color.bold("\n\nFound %s channels." % str(len(self.group["channels"])))))
+        print(color.yellow(color.bold("\n\nMassive output will be generated at first, be aware.\n\n")))
+        print("Creating threads... ", end="")
+        self.create_threads()
+        print("Done.")
+        print("Starting downloads on all threads... ", end="")
+        self.start_threads()
+        print("Done.")
+        self.waiting()
 
 
 def clear():
@@ -2061,6 +2089,7 @@ if __name__ == "__main__":
         options, arguments = getopt.getopt(sys.argv[1:], "w:", ["watch="])
         for option, arguments in options:
             if option == "-w" or "--watch":
+                clear()
                 Watch(arguments).start()
 
     while True:
