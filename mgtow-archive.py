@@ -20,7 +20,7 @@ from random import randint
 from datetime import datetime
 from fnmatch import fnmatch
 from pathlib import Path
-from time import sleep, process_time
+from time import sleep, perf_counter
 
 import qbittorrentapi
 import youtube_dl
@@ -260,7 +260,7 @@ class Organizer:
                 elif os.path.isdir(absolute_file_path):
                     if file not in sorted_folders_names:
                         print("\nDetected Folder: %s\n"
-                              "Not moving the folder..." % absolute_file_path)
+                              "Not moving the folder...\n" % absolute_file_path)
         Json.encode("sort_by_type", ConfigPath().get() + "sort_type.json")
 
     def all_in_one(self, root_path):
@@ -1455,22 +1455,38 @@ def download_choice():
                     videos_lst.append(video_url)
 
     clear()
-    print(color.yellow(color.bold("CTRL + C")) +
-          " to cancel download.\n")
-    sleep(0.5)
+    print(color.red(color.bold("--------------------------------------------------")))
+    print(color.red(color.bold("|              USE CTRL + C TO EXIT              |")))
+    print(color.red(color.bold("--------------------------------------------------")))
 
     global warnings
     global errors
+    clock_dict = dict()
 
+    clock_global_start = perf_counter()
     for url in videos_lst:
+        url_clock_start = perf_counter()
         youtube_download(url)
+        url_clock_stop = perf_counter()
+        url_clock = url_clock_stop - url_clock_start
+        clock_dict[url] = url_clock
+    print(color.red(color.bold("\n\n------------------------------------------------------------\n\n")))
+    clock_global_stop = perf_counter()
+    clock_global = clock_global_stop - clock_global_start
 
+    print(" Download time for each URL:")
+    for time in clock_dict:
+        print("     %.0f for %s" % (clock_dict[time], time))
+    print(color.yellow(color.bold(" Total download time: %.0f seconds" % clock_global)))
+
+    print(color.red(color.bold("\n\n------------------------------------------------------------\n\n")))
     if warnings >= 1:
         print("\n   Download finished with %d warnings..." % warnings)
     if len(errors) >= 1:
         print(color.red(color.bold("\n   Download finished with %s errors..." % str(len(errors)))))
         for error in errors:
             print(color.red(color.bold(error)))
+    print(color.red(color.bold("\n\n------------------------------------------------------------\n\n")))
 
     warnings = 0
     errors = []
@@ -1479,6 +1495,7 @@ def download_choice():
         print(color.yellow(color.bold("\n Applying sorting type...")))
         organizer.sort_by_type(download_path)
         print(color.yellow(color.bold(" DONE!")))
+        print(color.red(color.bold("\n\n------------------------------------------------------------\n\n")))
 
     print()
     wait_input()
@@ -1570,39 +1587,61 @@ def groups_handler():
                         download_channels_choice = str(input(">:"))
                         if download_channels_choice not in affirmative_choice:
                             continue
+
                         clear()
-                        print(color.yellow(color.bold("CTRL + C")) + " to cancel download.")
-                        sleep(0.5)
-                        channel_count = 0
+                        print(color.red(color.bold("--------------------------------------------------")))
+                        print(color.red(color.bold("|              USE CTRL + C TO EXIT              |")))
+                        print(color.red(color.bold("--------------------------------------------------")))
 
                         global warnings
                         global errors
+                        channel_count = 1
+                        clock_dict = dict()
 
+                        clock_global_start = perf_counter()
                         for channel in current_group["channels"]:
-                            channel_count += 1
-                            print()
-                            print(color.red(color.bold("------------------------------------------------------------")))
-                            print()
-                            print(color.yellow(color.bold("     Channel %s of %s" % (str(channel_count), str(len(current_group["channels"]))))))
+                            print(color.red(color.bold(
+                                "\n\n------------------------------------------------------------\n\n")))
+                            print(color.yellow(color.bold("     Channel %s of %s" % (str(channel_count), str(len(
+                                current_group["channels"]))))))
                             print(color.yellow(color.bold("     Channel: %s" % channel)))
                             print(color.yellow(color.bold("     URL: %s" % current_group["channels"][channel])))
-                            print()
-                            print(color.red(color.bold("------------------------------------------------------------")))
-                            print()
-                            sleep(0.5)
+                            print(color.red(color.bold(
+                                "\n\n------------------------------------------------------------\n\n")))
+
+                            url_clock_start = perf_counter()
                             youtube_download(current_group["channels"][channel],
                                              youtube_config=YTConfig(current_group["config_path"]).get())
+                            url_clock_stop = perf_counter()
+                            url_clock = url_clock_stop - url_clock_start
+                            clock_dict[channel] = url_clock
+                            channel_count += 1
 
+                        clock_global_stop = perf_counter()
+                        clock_global = clock_global_stop - clock_global_start
+
+                        print(color.red(
+                            color.bold("\n\n------------------------------------------------------------\n\n")))
                         print("Updating last download date to: %s" % str(datetime.now().replace(microsecond=0)))
                         current_group["last_download"] = str(datetime.now().replace(microsecond=0))
                         groups.update_json(current_groups)
+                        print(color.red(
+                            color.bold("\n\n------------------------------------------------------------\n\n")))
 
-                        if warnings >= 1:
-                            print("\n   Download finished with %d warnings..." % warnings)
+                        print(" Download time for each URL:")
+                        for time in clock_dict:
+                            print("     %.0f seconds for %s" % (clock_dict[time], time))
+                        print(color.yellow(color.bold(" Total download time: %.0f seconds" % clock_global)))
+                        print(color.red(
+                            color.bold("\n\n------------------------------------------------------------\n\n")))
+
+                        print("\n   Download finished with %d warnings..." % warnings)
+                        print(color.red(color.bold("\n   Download finished with %s errors..." % str(len(errors)))))
                         if len(errors) >= 1:
-                            print(color.red(color.bold("\n   Download finished with %s errors..." % str(len(errors)))))
                             for error in errors:
                                 print(color.red(color.bold(error)))
+                        print(color.red(
+                            color.bold("\n\n------------------------------------------------------------\n\n")))
 
                         warnings = 0
                         errors = []
@@ -1611,6 +1650,8 @@ def groups_handler():
                             print(color.yellow(color.bold("\n Applying sorting type...")))
                             organizer.sort_by_type(download_path)
                             print(color.yellow(color.bold(" DONE!")))
+                            print(color.red(
+                                color.bold("\n\n------------------------------------------------------------\n\n")))
 
                         print()
                         wait_input()
@@ -1841,16 +1882,18 @@ def torrent_handler():
                     bit_size_info = create_torrent.generate_bit_size(path=channel_dict[add_channel_choice],
                                                                      trackers=trackers, piece_size=None)
                     print(color.yellow(color.bold("Using bit size of %dkb.\n" % (bit_size_info[2] // 1000))))
-                    print(color.yellow(color.bold("Using %d trackers\n" % len(trackers))))
+                    print(color.yellow(color.bold("Using %d trackers.\n" % len(trackers))))
                     print(color.red(color.bold("     This could take a while depending on the channel size.\n"
                                                "     DO NOT EXIT!\n")))
-                    channel_clock = process_time()
+                    clock_start = perf_counter()
                     create_torrent.make(path=channel_dict[add_channel_choice], trackers=trackers, piece_size=None,
                                         save_torrent_path=torrent_file_path)
+                    clock_stop = perf_counter()
+                    clock = clock_stop - clock_start
                     print(color.red(color.bold("\nSaved the .torrent file to %s\n" % torrent_file_path)))
-                    print(color.red(color.bold("Finished .torrent file in %.0fs\n") % channel_clock))
+                    print(color.red(color.bold("Finished generation in %.0f seconds.\n") % clock))
                     print("\nAdding channel .torrent to qbittorrent... ", end="")
-                    print(color.yellow(color.bold(qbittorrent.add_mgtow_torrent(torrent_file=torrent_file_path))))
+                    print(qbittorrent.add_mgtow_torrent(torrent_file=torrent_file_path))
                     wait_input()
 
                 else:
