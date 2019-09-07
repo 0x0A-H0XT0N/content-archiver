@@ -1190,6 +1190,405 @@ class Qbittorrent:
 
 
 class Groups:
+    class Interface:
+        def __init__(self):
+            pass
+
+        def main(self):
+            while True:
+                clear()
+                print(color.red(color.bold("---------------------------GROUPS---------------------------")))
+                print(color.yellow(color.bold("use")) + ") Select a group")
+                print(color.yellow(color.bold("add")) + ") Add a new group")
+                print(color.yellow(color.bold("del")) + ") Delete a group")
+                print(enter_to_return())
+                groups_choice = str(input(">:"))
+
+                groups.get()
+
+                if groups_choice == "":
+                    break
+
+                elif groups_choice == "use":
+                    self.use()
+
+                elif groups_choice == "add":
+                    self.add()
+
+                elif groups_choice == "del":
+                    self.delete()
+
+                elif groups_choice == "dlall":
+                    all_channels = groups.get_all_channels()
+
+                    if len(all_channels["channels"]) == 0:
+                        print("No channel to download")
+                        wait_input()
+                        continue
+
+                    clear()
+                    print(color.red(color.bold("--------------------------------------------------")))
+                    print(color.red(color.bold("|              USE CTRL + C TO EXIT              |")))
+                    print(color.red(color.bold("--------------------------------------------------")))
+
+                    global warnings
+                    global errors
+                    channel_count = 1
+                    clock_dict = dict()
+
+                    clock_global_start = perf_counter()
+                    for channel in all_channels["channels"]:
+                        print(color.red(color.bold(
+                            "\n\n------------------------------------------------------------\n\n")))
+                        print(
+                            color.yellow(color.bold("     Channel %s of %s" % (str(channel_count), str(len(
+                                all_channels["channels"]))))))
+                        print(color.yellow(color.bold("     Channel: %s" % channel)))
+                        print(color.yellow(color.bold("     URL: %s" % all_channels["channels"][channel])))
+                        print(color.red(color.bold(
+                            "\n\n------------------------------------------------------------\n\n")))
+
+                        url_clock_start = perf_counter()
+                        youtube_download(all_channels["channels"][channel],
+                                         youtube_config=YTConfig().get())
+                        url_clock_stop = perf_counter()
+                        url_clock = url_clock_stop - url_clock_start
+                        clock_dict[channel] = url_clock
+                        channel_count += 1
+
+                    clock_global_stop = perf_counter()
+                    clock_global = clock_global_stop - clock_global_start
+
+                    print(color.red(
+                        color.bold("\n\n------------------------------------------------------------\n\n")))
+                    print(" Download time for each URL:")
+                    for time in clock_dict:
+                        print("     %.0f seconds for %s" % (clock_dict[time], time))
+                    print(color.yellow(color.bold(" Total download time: %.0f seconds" % clock_global)))
+                    print(color.red(
+                        color.bold("\n\n------------------------------------------------------------\n\n")))
+
+                    print("\n   Download finished with %d warnings..." % warnings)
+                    print(color.red(
+                        color.bold("\n   Download finished with %s errors..." % str(len(errors)))))
+                    if len(errors) >= 1:
+                        for error in errors:
+                            print(color.red(color.bold(error)))
+                    print(color.red(
+                        color.bold("\n\n------------------------------------------------------------\n\n")))
+
+                    warnings = 0
+                    errors = []
+
+                    if organizer.get_sort_type() == "sort_by_type":
+                        print(color.yellow(color.bold("\n Applying sorting type...")))
+                        organizer.sort_by_type(download_path)
+                        print(color.yellow(color.bold(" DONE!")))
+                        print(color.red(
+                            color.bold(
+                                "\n\n------------------------------------------------------------\n\n")))
+
+                    print()
+                    wait_input()
+                    return
+
+                else:
+                    clear()
+                    wait_input()
+
+        @staticmethod
+        def use():
+            while True:
+                clear()
+                print(color.red(color.bold("------------------------SELECT-GROUP------------------------")))
+                current_groups = groups.get()
+                if len(current_groups) == 0:
+                    print("No groups where found.")
+                    wait_input()
+                    break
+
+                group_count = 0
+                for group in current_groups:
+                    group_count += 1
+                    print("     %s) %s\n"
+                          % (color.yellow(color.bold(str(group_count))), group["name"]))
+                print("Type the number of the group to be selected.")
+                print(enter_to_return())
+                selected_group = input(">:")
+                if selected_group == "":
+                    break
+                try:
+                    used_group = int(selected_group) - 1
+                    if used_group < 0:
+                        raise IndexError
+                    current_group = current_groups[used_group]
+                except ValueError:
+                    clear()
+                    print("Only numbers are accepted.")
+                    wait_input()
+                    continue
+                except IndexError:
+                    clear()
+                    print("Number selected does not correspond to any group.")
+                    wait_input()
+                    continue
+                while True:
+                    group_ytconfig = YTConfig(config_file=current_group["config_path"])
+
+                    clear()
+                    print(color.red(
+                        color.bold("-------------------------GROUP-STATS------------------------")))
+                    print("Group name: %s" % color.yellow(color.bold(current_group["name"])))
+                    print("Creation date: %s" % color.yellow(color.bold(current_group["create_time"])))
+                    print("Last download: %s" % color.yellow(color.bold(current_group["last_download"])))
+                    print("%s channel(s)" % color.yellow(color.bold(str(len(current_group["channels"])))))
+                    print(color.red(
+                        color.bold("------------------------GROUP-ACTIONS-----------------------")))
+                    print(color.yellow(color.bold("1")) + ") Download")
+                    print(color.yellow(color.bold("2")) + ") Add channel(s)")
+                    print(color.yellow(color.bold("3")) + ") Remove channel(s)")
+                    print(color.yellow(color.bold("4")) + ") Rename group")
+                    print(color.yellow(color.bold("5")) + ") Set download options")
+                    print(enter_to_return())
+                    group_action = str(input(">:"))
+                    if group_action == "":
+                        break
+
+                    elif group_action == "1":
+                        clear()
+                        print(color.red(
+                            color.bold("-----------------------DOWNLOAD-GROUP-----------------------")))
+                        if len(current_group["channels"]) == 0:
+                            print("No channel to download")
+                            wait_input()
+                            continue
+
+                        print(color.yellow(color.bold(str(len(current_group["channels"])))) +
+                              " channel(s) will be downloaded. " +
+                              color.yellow(color.bold("Proceed? [y/N]")))
+                        download_channels_choice = str(input(">:"))
+                        if download_channels_choice not in affirmative_choice:
+                            continue
+
+                        clear()
+                        print(color.red(color.bold("--------------------------------------------------")))
+                        print(color.red(color.bold("|              USE CTRL + C TO EXIT              |")))
+                        print(color.red(color.bold("--------------------------------------------------")))
+
+                        global warnings
+                        global errors
+                        channel_count = 1
+                        clock_dict = dict()
+
+                        clock_global_start = perf_counter()
+                        for channel in current_group["channels"]:
+                            print(color.red(color.bold(
+                                "\n\n------------------------------------------------------------\n\n")))
+                            print(
+                                color.yellow(color.bold("     Channel %s of %s" % (str(channel_count), str(len(
+                                    current_group["channels"]))))))
+                            print(color.yellow(color.bold("     Channel: %s" % channel)))
+                            print(color.yellow(color.bold("     URL: %s" % current_group["channels"][channel])))
+                            print(color.red(color.bold(
+                                "\n\n------------------------------------------------------------\n\n")))
+
+                            url_clock_start = perf_counter()
+                            youtube_download(current_group["channels"][channel],
+                                             youtube_config=YTConfig(current_group["config_path"]).get())
+                            url_clock_stop = perf_counter()
+                            url_clock = url_clock_stop - url_clock_start
+                            clock_dict[channel] = url_clock
+                            channel_count += 1
+
+                        clock_global_stop = perf_counter()
+                        clock_global = clock_global_stop - clock_global_start
+
+                        print(color.red(
+                            color.bold("\n\n------------------------------------------------------------\n\n")))
+                        print("Updating last download date to: %s" % str(datetime.now().replace(microsecond=0)))
+                        current_group["last_download"] = str(datetime.now().replace(microsecond=0))
+                        groups.update_json(current_groups)
+                        print(color.red(
+                            color.bold("\n\n------------------------------------------------------------\n\n")))
+
+                        print(" Download time for each URL:")
+                        for time in clock_dict:
+                            print("     %.0f seconds for %s" % (clock_dict[time], time))
+                        print(color.yellow(color.bold(" Total download time: %.0f seconds" % clock_global)))
+                        print(color.red(
+                            color.bold("\n\n------------------------------------------------------------\n\n")))
+
+                        print("\n   Download finished with %d warnings..." % warnings)
+                        print(color.red(
+                            color.bold("\n   Download finished with %s errors..." % str(len(errors)))))
+                        if len(errors) >= 1:
+                            for error in errors:
+                                print(color.red(color.bold(error)))
+                        print(color.red(
+                            color.bold("\n\n------------------------------------------------------------\n\n")))
+
+                        warnings = 0
+                        errors = []
+
+                        if organizer.get_sort_type() == "sort_by_type":
+                            print(color.yellow(color.bold("\n Applying sorting type...")))
+                            organizer.sort_by_type(download_path)
+                            print(color.yellow(color.bold(" DONE!")))
+                            print(color.red(
+                                color.bold(
+                                    "\n\n------------------------------------------------------------\n\n")))
+
+                        print()
+                        wait_input()
+                        return
+
+                    elif group_action == "2":
+                        while True:
+                            clear()
+                            print(color.red(
+                                color.bold("--------------------ADD-CHANNEL-TO-GROUP--------------------")))
+                            print(color.yellow(color.bold("Leave blank to cancel.\n")))
+                            channel_name = str(input(color.yellow(color.bold("Name")) + " of the channel?\n>:"))
+                            channel_url = str(
+                                input(color.yellow(color.bold("\nLink")) + " of the channel?\n>:"))
+                            if channel_name and channel_url != "":
+                                current_group["channels"][channel_name] = channel_url
+                                groups.update_json(current_groups)
+                                add_another_channel_choice = str(input("\nAdd another channel? [y/N]\n>:"))
+                                if add_another_channel_choice not in affirmative_choice:
+                                    break
+                            else:
+                                break
+                    elif group_action == "3":
+                        while True:
+                            clear()
+                            print(color.red(
+                                color.bold("------------------REMOVE-CHANNEL-FROM-GROUP-----------------")))
+                            if len(current_group["channels"]) == 0:
+                                print("No channel was found")
+                                wait_input()
+                                break
+                            else:
+                                print("Found %s channel(s)\n"
+                                      % color.yellow(color.bold(str(len(current_group["channels"])))))
+
+                            channel_count = 0
+                            channel_count_dict = dict()
+                            for channel in current_group["channels"]:
+                                channel_count += 1
+                                print("      %s) Name: %s\n"
+                                      "      URL:  %s\n" % (color.yellow(color.bold(str(channel_count))),
+                                                            channel, current_group["channels"][channel]))
+                                channel_count_dict[channel_count] = channel
+                            print("Use '@ALL' to delete all groups %s" % color.yellow(color.bold("[CAUTION]")))
+                            print("Type the number of a channel to be removed")
+                            print(enter_to_return())
+                            removed_channel = str(input(">:"))
+                            if removed_channel == "":
+                                break
+                            elif removed_channel == "@ALL":
+                                clear()
+                                sure = str(input("Delete all channels selected. Proceed? [y/N]"))
+                                if sure in affirmative_choice:
+                                    current_group["channels"] = {}
+                                    groups.update_json(current_groups)
+                                    break
+                                else:
+                                    continue
+                            try:
+                                removed_channel = int(removed_channel)
+                                del current_group["channels"][channel_count_dict[removed_channel]]
+                            except ValueError:
+                                clear()
+                                print("Only numbers are accepted.")
+                                wait_input()
+                                continue
+                            except KeyError:
+                                clear()
+                                print("Number selected does not correspond to any group.")
+                                wait_input()
+                                continue
+                            groups.update_json(current_groups)
+                    elif group_action == "4":
+                        clear()
+                        print(color.red(
+                            color.bold("------------------------RENAME-GROUP------------------------")))
+                        print("Current group name: %s" % color.yellow(color.bold(current_group["name"])))
+                        print("Type the new group name")
+                        print(enter_to_return())
+                        new_name = str(input(">:"))
+                        if new_name == "":
+                            continue
+                        current_group["name"] = new_name
+                        groups.update_json(current_groups)
+                    elif group_action == "5":
+                        group_ytconfig.handler()
+                    else:
+                        clear()
+                        wait_input()
+                        continue
+
+        @staticmethod
+        def add():
+            while True:
+                clear()
+                print(color.red(color.bold("--------------------------ADD-GROUP-------------------------")))
+                print("Type the name of the new group.")
+                print(enter_to_return())
+                group_name = str(input(">:"))
+                if group_name == "":
+                    break
+                else:
+                    groups.add(group_name)
+                    break
+
+        @staticmethod
+        def delete():
+            while True:
+                clear()
+                print(color.red(color.bold("------------------------DELETE-GROUP------------------------")))
+                current_groups = groups.get()
+                if len(current_groups) == 0:
+                    print("No groups where found.")
+                    wait_input()
+                    break
+                else:
+                    print("Use '@ALL' to delete all groups %s\n" % color.yellow(color.bold("[CAUTION]")))
+                    group_count = 0
+                    for group in current_groups:
+                        group_count += 1
+                        print("     %s) %s\n"
+                              % (color.yellow(color.bold(str(group_count))), group["name"]))
+                    print("Type the number of the group to be deleted.")
+                    print(enter_to_return())
+                    removed_group = input(">:")
+                    if removed_group == "":
+                        break
+                    elif removed_group == "@ALL":
+                        clear()
+                        sure = str(input("Delete all groups selected. Proceed? [y/N]"))
+                        if sure in affirmative_choice:
+                            for group in current_groups:
+                                os.remove(group["config_path"])  # remove each group config
+                            groups.update_json([])  # wipe groups.json
+                            break
+                    try:
+                        deleted_group = int(removed_group) - 1
+                        if deleted_group < 0:
+                            raise IndexError
+                    except ValueError:
+                        clear()
+                        print("Only numbers are accepted.")
+                        wait_input()
+                        continue
+                    except IndexError:
+                        clear()
+                        print("Number selected does not correspond to any group.")
+                        wait_input()
+                        continue
+                    os.remove(current_groups[deleted_group]["config_path"])  # remove group config
+                    groups.remove(deleted_group)  # remove group from groups.config
+                    break
 
     def __init__(self):
         self.groups_config_path = ConfigPath().get() + "groups/groups.json"
@@ -1223,6 +1622,15 @@ class Groups:
         del current[list_item]
         return self.update_json(current)
 
+    def get_all_channels(self):
+        current_groups = self.get()
+        channels = dict()
+        channels["channels"] = dict()
+        for group in current_groups:
+            for channel in group["channels"]:
+                channels["channels"][channel] = group["channels"][channel]
+        return channels
+
 
 class Watch:
     def __init__(self, group_name, retries=99999):
@@ -1234,50 +1642,116 @@ class Watch:
                 self.group = group
                 found = True
                 break
+        if group_name == "all":
+            self.group = groups.get_all_channels()
+            self.group["config_path"] = ConfigPath().get() + "master_config.json"
+            found = True
         if not found:
             raise SyntaxError("Group '%s' not found." % group_name)
 
         self.group_config = YTConfig(self.group["config_path"]).get()
         self.group_config["retries"] = retries
 
-    def download(self, channel):
-        thread_name = threading.current_thread().name
-        count = 0
-        while True:
-            youtube_download(channel, self.group_config)
-            count += 1
-            print("[%s] Finished downloading... Sleeping and repeating..." % thread_name)
-            sleep(randint(60, 120))
-            print("[%s] Awaking up. Starting download %d." % (thread_name, count))
-
-    def create_threads(self):
-        for channel in self.group["channels"]:
-            channel_thread = threading.Thread(target=self.download, args=[self.group["channels"][channel]], daemon=True)
-            self.threads.append(channel_thread)
-
-    def start_threads(self):
-        for thread in self.threads:
-            thread.start()
-
-    def waiting(self):
-        while True:
-            pass
-
+    # def download(self, channel):
+    #     thread_name = threading.current_thread().name
+    #     count = 0
+    #     while True:
+    #         youtube_download(channel, self.group_config)
+    #         count += 1
+    #         print("[%s] Finished downloading... Sleeping and repeating..." % thread_name)
+    #         sleep(randint(60, 120))
+    #         print("[%s] Awaking up. Starting download %d." % (thread_name, count))
+    #
+    # def create_threads(self):
+    #     for channel in self.group["channels"]:
+    #         channel_thread = threading.Thread(target=self.download, args=[self.group["channels"][channel]], daemon=True)
+    #         self.threads.append(channel_thread)
+    #
+    # def start_threads(self):
+    #     for thread in self.threads:
+    #         thread.start()
+    #
+    # def waiting(self):
+    #     while True:
+    #         pass
 
     def start(self):
-        print(color.red(color.bold("--------------------------------------------------")))
-        print(color.red(color.bold("|              USE CTRL + C TO EXIT              |")))
-        print(color.red(color.bold("--------------------------------------------------")))
-        sleep(2)
-        print(color.yellow(color.bold("\n\nFound %s channels." % str(len(self.group["channels"])))))
-        print(color.yellow(color.bold("\n\nMassive output will be generated at first, be aware.\n\n")))
-        print("Creating threads... ", end="")
-        self.create_threads()
-        print("Done.")
-        print("Starting downloads on all threads... ", end="")
-        self.start_threads()
-        print("Done.")
-        self.waiting()
+        while True:
+            clear()
+            print(color.red(color.bold("--------------------------------------------------")))
+            print(color.red(color.bold("|              USE CTRL + C TO EXIT              |")))
+            print(color.red(color.bold("--------------------------------------------------")))
+
+            global warnings
+            global errors
+            channel_count = 1
+            clock_dict = dict()
+
+            clock_global_start = perf_counter()
+            for channel in self.group["channels"]:
+                print(color.red(color.bold(
+                    "\n\n------------------------------------------------------------\n\n")))
+                print(
+                    color.yellow(color.bold("     Channel %s of %s" % (str(channel_count), str(len(
+                        self.group["channels"]))))))
+                print(color.yellow(color.bold("     Channel: %s" % channel)))
+                print(color.yellow(color.bold("     URL: %s" % self.group["channels"][channel])))
+                print(color.red(color.bold(
+                    "\n\n------------------------------------------------------------\n\n")))
+
+                url_clock_start = perf_counter()
+                youtube_download(self.group["channels"][channel],
+                                 self.group_config)
+                url_clock_stop = perf_counter()
+                url_clock = url_clock_stop - url_clock_start
+                clock_dict[channel] = url_clock
+                channel_count += 1
+
+            clock_global_stop = perf_counter()
+            clock_global = clock_global_stop - clock_global_start
+
+            print(color.red(
+                color.bold("\n\n------------------------------------------------------------\n\n")))
+            print(" Download time for each URL:")
+            for time in clock_dict:
+                print("     %.0f seconds for %s" % (clock_dict[time], time))
+            print(color.yellow(color.bold(" Total download time: %.0f seconds" % clock_global)))
+            print(color.red(
+                color.bold("\n\n------------------------------------------------------------\n\n")))
+
+            print("\n   Download finished with %d warnings..." % warnings)
+            print(color.red(
+                color.bold("\n   Download finished with %s errors..." % str(len(errors)))))
+            if len(errors) >= 1:
+                for error in errors:
+                    print(color.red(color.bold(error)))
+            print(color.red(
+                color.bold("\n\n------------------------------------------------------------\n\n")))
+
+            warnings = 0
+            errors = []
+
+            if organizer.get_sort_type() == "sort_by_type":
+                print(color.yellow(color.bold("\n Applying sorting type...")))
+                organizer.sort_by_type(download_path)
+                print(color.yellow(color.bold(" DONE!")))
+                print(color.red(
+                    color.bold(
+                        "\n\n------------------------------------------------------------\n\n")))
+            print(color.red(color.bold("        \n\nREPEATING LOOP...\n\n")))
+        # print(color.red(color.bold("--------------------------------------------------")))
+        # print(color.red(color.bold("|              USE CTRL + C TO EXIT              |")))
+        # print(color.red(color.bold("--------------------------------------------------")))
+        # sleep(2)
+        # print(color.yellow(color.bold("\n\nFound %s channels." % str(len(self.group["channels"])))))
+        # print(color.yellow(color.bold("\n\nMassive output will be generated at first, be aware.\n\n")))
+        # print("Creating threads... ", end="")
+        # self.create_threads()
+        # print("Done.")
+        # print("Starting downloads on all threads... ", end="")
+        # self.start_threads()
+        # print("Done.")
+        # self.waiting()
 
 
 def clear():
@@ -1329,7 +1803,8 @@ def wait_input():
         while user_input is None:  # while the user input is None (e.i. no key press detect on "stdin"), wait...
             user_input = sys.stdin.read(1)[0]  # this will be reading "stdin" until a key is detected
             clear()  # this will only be reached when a key is detected, until that happens, this will not be reached
-        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, original_stdin_settings)  # set "stdin" to default (no raw input)
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, original_stdin_settings)
+        # set "stdin" to default (no raw input)
 
 
 def enter_to_return():
@@ -1500,306 +1975,6 @@ def download_choice():
     print()
     wait_input()
     return
-
-
-def groups_handler():
-    while True:
-        clear()
-        print(color.red(color.bold("---------------------------GROUPS---------------------------")))
-        print(color.yellow(color.bold("use")) + ") Select a group")
-        print(color.yellow(color.bold("add")) + ") Add a new group")
-        print(color.yellow(color.bold("del")) + ") Delete a group")
-        print(enter_to_return())
-        groups_choice = str(input(">:"))
-
-        groups.get()
-
-        if groups_choice == "":
-            break
-
-        elif groups_choice == "use":
-            while True:
-                clear()
-                print(color.red(color.bold("------------------------SELECT-GROUP------------------------")))
-                current_groups = groups.get()
-                if len(current_groups) == 0:
-                    print("No groups where found.")
-                    wait_input()
-                    break
-
-                group_count = 0
-                for group in current_groups:
-                    group_count += 1
-                    print("     %s) %s\n"
-                          % (color.yellow(color.bold(str(group_count))), group["name"]))
-                print("Type the number of the group to be selected.")
-                print(enter_to_return())
-                selected_group = input(">:")
-                if selected_group == "":
-                    break
-                try:
-                    used_group = int(selected_group) - 1
-                    if used_group < 0:
-                        raise IndexError
-                    current_group = current_groups[used_group]
-                except ValueError:
-                    clear()
-                    print("Only numbers are accepted.")
-                    wait_input()
-                    continue
-                except IndexError:
-                    clear()
-                    print("Number selected does not correspond to any group.")
-                    wait_input()
-                    continue
-                while True:
-                    group_ytconfig = YTConfig(config_file=current_group["config_path"])
-
-                    clear()
-                    print(color.red(
-                        color.bold("-------------------------GROUP-STATS------------------------")))
-                    print("Group name: %s" % color.yellow(color.bold(current_group["name"])))
-                    print("Creation date: %s" % color.yellow(color.bold(current_group["create_time"])))
-                    print("Last download: %s" % color.yellow(color.bold(current_group["last_download"])))
-                    print("%s channel(s)" % color.yellow(color.bold(str(len(current_group["channels"])))))
-                    print(color.red(
-                        color.bold("------------------------GROUP-ACTIONS-----------------------")))
-                    print(color.yellow(color.bold("1")) + ") Download")
-                    print(color.yellow(color.bold("2")) + ") Add channel(s)")
-                    print(color.yellow(color.bold("3")) + ") Remove channel(s)")
-                    print(color.yellow(color.bold("4")) + ") Rename group")
-                    print(color.yellow(color.bold("5")) + ") Set download options")
-                    print(enter_to_return())
-                    group_action = str(input(">:"))
-                    if group_action == "":
-                        break
-                    elif group_action == "1":
-                        clear()
-                        print(color.red(color.bold("-----------------------DOWNLOAD-GROUP-----------------------")))
-                        if len(current_group["channels"]) == 0:
-                            print("No channel to download")
-                            wait_input()
-                            continue
-
-                        print(color.yellow(color.bold(str(len(current_group["channels"])))) +
-                              " channel(s) will be downloaded. " +
-                              color.yellow(color.bold("Proceed? [y/N]")))
-                        download_channels_choice = str(input(">:"))
-                        if download_channels_choice not in affirmative_choice:
-                            continue
-
-                        clear()
-                        print(color.red(color.bold("--------------------------------------------------")))
-                        print(color.red(color.bold("|              USE CTRL + C TO EXIT              |")))
-                        print(color.red(color.bold("--------------------------------------------------")))
-
-                        global warnings
-                        global errors
-                        channel_count = 1
-                        clock_dict = dict()
-
-                        clock_global_start = perf_counter()
-                        for channel in current_group["channels"]:
-                            print(color.red(color.bold(
-                                "\n\n------------------------------------------------------------\n\n")))
-                            print(color.yellow(color.bold("     Channel %s of %s" % (str(channel_count), str(len(
-                                current_group["channels"]))))))
-                            print(color.yellow(color.bold("     Channel: %s" % channel)))
-                            print(color.yellow(color.bold("     URL: %s" % current_group["channels"][channel])))
-                            print(color.red(color.bold(
-                                "\n\n------------------------------------------------------------\n\n")))
-
-                            url_clock_start = perf_counter()
-                            youtube_download(current_group["channels"][channel],
-                                             youtube_config=YTConfig(current_group["config_path"]).get())
-                            url_clock_stop = perf_counter()
-                            url_clock = url_clock_stop - url_clock_start
-                            clock_dict[channel] = url_clock
-                            channel_count += 1
-
-                        clock_global_stop = perf_counter()
-                        clock_global = clock_global_stop - clock_global_start
-
-                        print(color.red(
-                            color.bold("\n\n------------------------------------------------------------\n\n")))
-                        print("Updating last download date to: %s" % str(datetime.now().replace(microsecond=0)))
-                        current_group["last_download"] = str(datetime.now().replace(microsecond=0))
-                        groups.update_json(current_groups)
-                        print(color.red(
-                            color.bold("\n\n------------------------------------------------------------\n\n")))
-
-                        print(" Download time for each URL:")
-                        for time in clock_dict:
-                            print("     %.0f seconds for %s" % (clock_dict[time], time))
-                        print(color.yellow(color.bold(" Total download time: %.0f seconds" % clock_global)))
-                        print(color.red(
-                            color.bold("\n\n------------------------------------------------------------\n\n")))
-
-                        print("\n   Download finished with %d warnings..." % warnings)
-                        print(color.red(color.bold("\n   Download finished with %s errors..." % str(len(errors)))))
-                        if len(errors) >= 1:
-                            for error in errors:
-                                print(color.red(color.bold(error)))
-                        print(color.red(
-                            color.bold("\n\n------------------------------------------------------------\n\n")))
-
-                        warnings = 0
-                        errors = []
-
-                        if organizer.get_sort_type() == "sort_by_type":
-                            print(color.yellow(color.bold("\n Applying sorting type...")))
-                            organizer.sort_by_type(download_path)
-                            print(color.yellow(color.bold(" DONE!")))
-                            print(color.red(
-                                color.bold("\n\n------------------------------------------------------------\n\n")))
-
-                        print()
-                        wait_input()
-                        return
-
-                    elif group_action == "2":
-                        while True:
-                            clear()
-                            print(color.red(color.bold("--------------------ADD-CHANNEL-TO-GROUP--------------------")))
-                            print(color.yellow(color.bold("Leave blank to cancel.\n")))
-                            channel_name = str(input(color.yellow(color.bold("Name")) + " of the channel?\n>:"))
-                            channel_url = str(input(color.yellow(color.bold("\nLink")) + " of the channel?\n>:"))
-                            if channel_name and channel_url != "":
-                                current_group["channels"][channel_name] = channel_url
-                                groups.update_json(current_groups)
-                                add_another_channel_choice = str(input("\nAdd another channel? [y/N]\n>:"))
-                                if add_another_channel_choice not in affirmative_choice:
-                                    break
-                            else:
-                                break
-                    elif group_action == "3":
-                        while True:
-                            clear()
-                            print(color.red(color.bold("------------------REMOVE-CHANNEL-FROM-GROUP-----------------")))
-                            if len(current_group["channels"]) == 0:
-                                print("No channel was found")
-                                wait_input()
-                                break
-                            else:
-                                print("Found %s channel(s)\n"
-                                      % color.yellow(color.bold(str(len(current_group["channels"])))))
-
-                            channel_count = 0
-                            channel_count_dict = dict()
-                            for channel in current_group["channels"]:
-                                channel_count += 1
-                                print("      %s) Name: %s\n"
-                                      "      URL:  %s\n" % (color.yellow(color.bold(str(channel_count))),
-                                                            channel, current_group["channels"][channel]))
-                                channel_count_dict[channel_count] = channel
-                            print("Use '@ALL' to delete all groups %s" % color.yellow(color.bold("[CAUTION]")))
-                            print("Type the number of a channel to be removed")
-                            print(enter_to_return())
-                            removed_channel = str(input(">:"))
-                            if removed_channel == "":
-                                break
-                            elif removed_channel == "@ALL":
-                                clear()
-                                sure = str(input("Delete all channels selected. Proceed? [y/N]"))
-                                if sure in affirmative_choice:
-                                    current_group["channels"] = {}
-                                    groups.update_json(current_groups)
-                                    break
-                                else:
-                                    continue
-                            try:
-                                removed_channel = int(removed_channel)
-                                del current_group["channels"][channel_count_dict[removed_channel]]
-                            except ValueError:
-                                clear()
-                                print("Only numbers are accepted.")
-                                wait_input()
-                                continue
-                            except KeyError:
-                                clear()
-                                print("Number selected does not correspond to any group.")
-                                wait_input()
-                                continue
-                            groups.update_json(current_groups)
-                    elif group_action == "4":
-                        clear()
-                        print(color.red(
-                            color.bold("------------------------RENAME-GROUP------------------------")))
-                        print("Current group name: %s" % color.yellow(color.bold(current_group["name"])))
-                        print("Type the new group name")
-                        print(enter_to_return())
-                        new_name = str(input(">:"))
-                        if new_name == "":
-                            continue
-                        current_group["name"] = new_name
-                        groups.update_json(current_groups)
-                    elif group_action == "5":
-                        group_ytconfig.handler()
-                    else:
-                        clear()
-                        wait_input()
-                        continue
-        elif groups_choice == "add":
-            while True:
-                clear()
-                print(color.red(color.bold("--------------------------ADD-GROUP-------------------------")))
-                print("Type the name of the new group.")
-                print(enter_to_return())
-                group_name = str(input(">:"))
-                if group_name == "":
-                    break
-                else:
-                    groups.add(group_name)
-                    break
-        elif groups_choice == "del":
-            while True:
-                clear()
-                print(color.red(color.bold("------------------------DELETE-GROUP------------------------")))
-                current_groups = groups.get()
-                if len(current_groups) == 0:
-                    print("No groups where found.")
-                    wait_input()
-                    break
-                else:
-                    print("Use '@ALL' to delete all groups %s\n" % color.yellow(color.bold("[CAUTION]")))
-                    group_count = 0
-                    for group in current_groups:
-                        group_count += 1
-                        print("     %s) %s\n"
-                              % (color.yellow(color.bold(str(group_count))), group["name"]))
-                    print("Type the number of the group to be deleted.")
-                    print(enter_to_return())
-                    removed_group = input(">:")
-                    if removed_group == "":
-                        break
-                    elif removed_group == "@ALL":
-                        clear()
-                        sure = str(input("Delete all groups selected. Proceed? [y/N]"))
-                        if sure in affirmative_choice:
-                            for group in current_groups:
-                                os.remove(group["config_path"])  # remove each group config
-                            groups.update_json([])  # wipe groups.json
-                            break
-                    try:
-                        deleted_group = int(removed_group) - 1
-                        if deleted_group < 0:
-                            raise IndexError
-                    except ValueError:
-                        clear()
-                        print("Only numbers are accepted.")
-                        wait_input()
-                        continue
-                    except IndexError:
-                        clear()
-                        print("Number selected does not correspond to any group.")
-                        wait_input()
-                        continue
-                    os.remove(current_groups[deleted_group]["config_path"])  # remove group config
-                    groups.remove(deleted_group)    # remove group from groups.config
-                    break
-        else:
-            clear()
-            wait_input()
 
 
 def torrent_handler():
@@ -2173,7 +2348,7 @@ if __name__ == "__main__":
             download_choice()
 
         elif choice == 2:
-            groups_handler()
+            groups.Interface().main()
 
         elif choice == 3:
             torrent_handler()
