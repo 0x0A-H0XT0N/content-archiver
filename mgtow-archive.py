@@ -1676,12 +1676,11 @@ class Watch:
     #         pass
 
     def start(self):
+        clear()
+        print(color.red(color.bold("--------------------------------------------------")))
+        print(color.red(color.bold("|              USE CTRL + C TO EXIT              |")))
+        print(color.red(color.bold("--------------------------------------------------")))
         while True:
-            clear()
-            print(color.red(color.bold("--------------------------------------------------")))
-            print(color.red(color.bold("|              USE CTRL + C TO EXIT              |")))
-            print(color.red(color.bold("--------------------------------------------------")))
-
             global warnings
             global errors
             channel_count = 1
