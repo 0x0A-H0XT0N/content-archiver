@@ -1,10 +1,17 @@
-#  ███╗   ███╗ ██████╗████████╗ ██████╗ ██╗    ██╗     █████╗ ██████╗  ██████╗██╗  ██╗██╗██╗   ██╗███████╗
-#  ████╗ ████║██╔════╝╚══██╔══╝██╔═══██╗██║    ██║    ██╔══██╗██╔══██╗██╔════╝██║  ██║██║██║   ██║██╔════╝
-#  ██╔████╔██║██║  ███╗  ██║   ██║   ██║██║ █╗ ██║    ███████║██████╔╝██║     ███████║██║██║   ██║█████╗
-#  ██║╚██╔╝██║██║   ██║  ██║   ██║   ██║██║███╗██║    ██╔══██║██╔══██╗██║     ██╔══██║██║╚██╗ ██╔╝██╔══╝
-#  ██║ ╚═╝ ██║╚██████╔╝  ██║   ╚██████╔╝╚███╔███╔╝    ██║  ██║██║  ██║╚██████╗██║  ██║██║ ╚████╔╝ ███████╗
-#  ╚═╝     ╚═╝ ╚═════╝   ╚═╝    ╚═════╝  ╚══╝╚══╝     ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝
-# https://github.com/PhoenixK7PB/mgtow-archive
+#   ██████╗ ██████╗ ███╗   ██╗████████╗███████╗███╗   ██╗████████╗
+#  ██╔════╝██╔═══██╗████╗  ██║╚══██╔══╝██╔════╝████╗  ██║╚══██╔══╝
+#  ██║     ██║   ██║██╔██╗ ██║   ██║   █████╗  ██╔██╗ ██║   ██║
+#  ██║     ██║   ██║██║╚██╗██║   ██║   ██╔══╝  ██║╚██╗██║   ██║
+#  ╚██████╗╚██████╔╝██║ ╚████║   ██║   ███████╗██║ ╚████║   ██║
+#   ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═══╝   ╚═╝
+#
+#   █████╗ ██████╗  ██████╗██╗  ██╗██╗██╗   ██╗███████╗██████╗
+#  ██╔══██╗██╔══██╗██╔════╝██║  ██║██║██║   ██║██╔════╝██╔══██╗
+#  ███████║██████╔╝██║     ███████║██║██║   ██║█████╗  ██████╔╝
+#  ██╔══██║██╔══██╗██║     ██╔══██║██║╚██╗ ██╔╝██╔══╝  ██╔══██╗
+#  ██║  ██║██║  ██║╚██████╗██║  ██║██║ ╚████╔╝ ███████╗██║  ██║
+#  ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝
+# https://github.com/PhoenixK7PB/content-archiver
 #
 # TODO: make a list of all possible bit sizes for the user to choose from
 # TODO: make shortcuts
@@ -128,9 +135,9 @@ class Json:
 class ConfigPath:
     def __init__(self):
         if "win" in sys.platform.lower():
-            self.config_path = str(Path.home()) + "\.mgtowArchive\\"
+            self.config_path = str(Path.home()) + "\.contentArchiver\\"
         else:
-            self.config_path = str(Path.home()) + "/.config/mgtow-archive/"
+            self.config_path = str(Path.home()) + "/.config/content-archiver/"
 
     def get(self):
         if not os.path.exists(self.config_path):  # check if config dir exists
@@ -312,9 +319,9 @@ class YTConfig:
         def __init__(self, config_file=ConfigPath().get() + "path.json"):
             self.config_file = config_file
             if "win" in sys.platform.lower():
-                self.default_path = str(Path.home()) + "\Videos\\MGTOW Archive\\"
+                self.default_path = str(Path.home()) + "\Videos\\Content Archiver\\"
             else:
-                self.default_path = str(Path.home()) + "/mgtow-archive/"
+                self.default_path = str(Path.home()) + "/content-archiver/"
 
         def get(self):
             """
@@ -1110,10 +1117,10 @@ class CreateTorrent:
             return Json.encode(new_list, self.trackers_config_path)
 
     def __init__(self):
-        self.source_str = "mgtow-archive"
-        self.comment_str = "Videos downloaded using mgtow-archive, github project page: " \
-                           "https://github.com/PhoenixK7PB/mgtow-archive"
-        self.created_by_str = "https://github.com/PhoenixK7PB/mgtow-archive"
+        self.source_str = "content-archiver"
+        self.comment_str = "Videos downloaded using content-archiver, github project page: " \
+                           "https://github.com/PhoenixK7PB/content-archiver"
+        self.created_by_str = "https://github.com/PhoenixK7PB/content-archiver"
         self.exclude = [".torrent"]
 
     def make(self, path, trackers, save_torrent_path, piece_size=None):
@@ -1181,11 +1188,11 @@ class Qbittorrent:
     def client_version(self):
         return self.client_instance.app_version()
 
-    def list_mgtow_torrents(self):
-        return self.client_instance.torrents_info(status_filter="all", category="mgtow-archive")
+    def list_ca_torrents(self):
+        return self.client_instance.torrents_info(status_filter="all", category="content-archiver")
 
-    def add_mgtow_torrent(self, torrent_file=None):
-        return self.client_instance.torrents_add(torrent_files=torrent_file, category="mgtow-archive",
+    def add_ca_torrent(self, torrent_file=None):
+        return self.client_instance.torrents_add(torrent_files=torrent_file, category="content-archiver",
                                                  save_path=download_path)
 
 
@@ -1825,21 +1832,20 @@ def show_menu():
     function that prints the main menu options
     :return: menu banner with options
     """
-
-    print(color.red(" ███╗   ███╗ ██████╗████████╗ ██████╗ ██╗    ██╗"))
-    print(color.red(" ████╗ ████║██╔════╝╚══██╔══╝██╔═══██╗██║    ██║"))
-    print(color.red(" ██╔████╔██║██║  ███╗  ██║   ██║   ██║██║ █╗ ██║"))
-    print(color.red(" ██║╚██╔╝██║██║   ██║  ██║   ██║   ██║██║███╗██║"))
-    print(color.red(" ██║ ╚═╝ ██║╚██████╔╝  ██║   ╚██████╔╝╚███╔███╔╝"))
-    print(color.red(" ╚═╝     ╚═╝ ╚═════╝   ╚═╝    ╚═════╝  ╚══╝╚══╝  "))
-    print(color.red(""))
-    print(color.red("    █████╗ ██████╗  ██████╗██╗  ██╗██╗██╗   ██╗███████╗"))
-    print(color.red("   ██╔══██╗██╔══██╗██╔════╝██║  ██║██║██║   ██║██╔════╝"))
-    print(color.red("   ███████║██████╔╝██║     ███████║██║██║   ██║█████╗"))
-    print(color.red("   ██╔══██║██╔══██╗██║     ██╔══██║██║╚██╗ ██╔╝██╔══╝"))
-    print(color.red("   ██║  ██║██║  ██║╚██████╗██║  ██║██║ ╚████╔╝ ███████╗"))
-    print(color.red("   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝"))
-    print("                 by " + color.red(color.bold("PhoenixK7PB")))
+    print(color.red(color.bold("   ██████╗ ██████╗ ███╗   ██╗████████╗███████╗███╗   ██╗████████╗")))
+    print(color.red(color.bold("  ██╔════╝██╔═══██╗████╗  ██║╚══██╔══╝██╔════╝████╗  ██║╚══██╔══╝")))
+    print(color.red(color.bold("  ██║     ██║   ██║██╔██╗ ██║   ██║   █████╗  ██╔██╗ ██║   ██║   ")))
+    print(color.red(color.bold("  ██║     ██║   ██║██║╚██╗██║   ██║   ██╔══╝  ██║╚██╗██║   ██║   ")))
+    print(color.red(color.bold("  ╚██████╗╚██████╔╝██║ ╚████║   ██║   ███████╗██║ ╚████║   ██║   ")))
+    print(color.red(color.bold("   ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═══╝   ╚═╝   ")))
+    print(color.red(color.bold("                                                                 ")))
+    print(color.red(color.bold("   █████╗ ██████╗  ██████╗██╗  ██╗██╗██╗   ██╗███████╗██████╗    ")))
+    print(color.red(color.bold("  ██╔══██╗██╔══██╗██╔════╝██║  ██║██║██║   ██║██╔════╝██╔══██╗   ")))
+    print(color.red(color.bold("  ███████║██████╔╝██║     ███████║██║██║   ██║█████╗  ██████╔╝   ")))
+    print(color.red(color.bold("  ██╔══██║██╔══██╗██║     ██╔══██║██║╚██╗ ██╔╝██╔══╝  ██╔══██╗   ")))
+    print(color.red(color.bold("  ██║  ██║██║  ██║╚██████╗██║  ██║██║ ╚████╔╝ ███████╗██║  ██║   ")))
+    print(color.red(color.bold("  ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝   ")))
+    print("             by " + color.red(color.bold("PhoenixK7PB")))
     print(color.yellow(color.bold("1")) + ") Download video/playlist/channel  " +
           color.red(color.bold("|")) + "  " + color.yellow(color.bold("conf")) + ") Set download options")
     print(color.yellow(color.bold("2")) + ") Groups                           " +
@@ -1987,7 +1993,7 @@ def torrent_handler():
         print()
         print(color.yellow(color.bold("1")) + ") Create torrent                   " +
               color.red(color.bold("|")) + "")
-        print(color.yellow(color.bold("2")) + ") List mgtow-archive torrents      " +
+        print(color.yellow(color.bold("2")) + ") List content-archiver torrents      " +
               color.red(color.bold("|")) + "")
         print(color.yellow(color.bold("3")) + ") Change login                     " +
               color.red(color.bold("|")) + "  %s:%s"
@@ -2067,7 +2073,7 @@ def torrent_handler():
                     print(color.red(color.bold("\nSaved the .torrent file to %s\n" % torrent_file_path)))
                     print(color.red(color.bold("Finished generation in %.0f seconds.\n") % clock))
                     print("\nAdding channel .torrent to qbittorrent... ", end="")
-                    print(qbittorrent.add_mgtow_torrent(torrent_file=torrent_file_path))
+                    print(qbittorrent.add_ca_torrent(torrent_file=torrent_file_path))
                     wait_input()
 
                 else:
@@ -2076,25 +2082,25 @@ def torrent_handler():
 
         elif torrent_choice == "2":
             clear()
-            print(color.red(color.bold("-------------------MGTOW-ARCHIVE-TORRENTS-------------------")))
+            print(color.red(color.bold("------------------CONTENT-ARCHIVER-TORRENTS-----------------")))
             if not qbittorrent.client_auth_log_in():
                 print(color.red(color.bold("Login Failed. Check login credentials.")))
                 wait_input()
                 return
 
-            mgtow_torrents = qbittorrent.list_mgtow_torrents()
-            if len(mgtow_torrents) == 0:
-                print(color.yellow(color.bold("No torrents were found with the category 'mgtow-archive'.")))
+            ca_torrents = qbittorrent.list_ca_torrents()
+            if len(ca_torrents) == 0:
+                print(color.yellow(color.bold("No torrents were found with the category 'content-archiver'.")))
                 wait_input()
                 return
 
-            print("Found %s torrents with category 'mgtow-archive'."
-                  % color.yellow(color.bold(str(len(mgtow_torrents)))))
+            print("Found %s torrents with category 'content-archiver'."
+                  % color.yellow(color.bold(str(len(ca_torrents)))))
             print()
             count = 0
-            for torrent in mgtow_torrents:
+            for torrent in ca_torrents:
                 count += 1
-                print("     Torrent %s of %s" % (count, len(mgtow_torrents)))
+                print("     Torrent %s of %s" % (count, len(ca_torrents)))
                 print("     Name: %s" % torrent.name)
                 print("     Size: %.2fGB" % (torrent.size / 1073741824))
                 print()
@@ -2104,7 +2110,7 @@ def torrent_handler():
             clear()
             print(color.red(color.bold("BE CAREFUL WHEN CHANGING THE LOGIN IP AND PORT!"
                                        "\nANY MISLEADING CHANGES COULD BE CATASTROPHIC!"
-                                       "\nRemove the file '~/.config/mgtow-archive/torrent_config.json' "
+                                       "\nRemove the file '~/.config/content-archiver/torrent_config.json' "
                                        "if any errors occur.")))
             wait_input()
             while True:
