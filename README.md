@@ -1,4 +1,4 @@
-![MGTOW-Archive interface.](https://i.imgur.com/qe60Skq.png)
+![Content Archiver interface.](https://i.imgur.com/iRbPCkb.png)
 
 - [DESCRIPTION](#description)
 - [INSTALLATION](#installation)
@@ -11,7 +11,7 @@
 
 # DESCRIPTION
 
-MGTOW Archive is a Multi OS, Python3 CLI program 
+Content Archiver is a Multi OS, Python3 CLI program 
 designed to download, store, update and share large quantities of youtube videos and channels. Keep in mind that small 
 quantities of video can be downloaded just as easy.
 
@@ -22,8 +22,6 @@ By default, the program will download all the video information, which can be cu
 information about it.
 
 The program has [torrent integration](#torrent-integration), which helps to share any content downloaded.
-
-**Remember: You can download any type of content you want, but the idea of the project is to store MGTOW videos.**
 
 # INSTALLATION
 
@@ -53,8 +51,8 @@ Groups are a list (or group) of channels, every group has its own download confi
 
 Groups configs can be shared by coping or pasting then at this folder:
 ```
-Windows:    ~\.mgtowArchive\groups
-Linux:      ~/.config/mgtow-archive/groups
+Windows:    ~\.contentArchiver\groups
+Linux:      ~/.config/content-archiver/groups
 ```
 
 # DOWNLOAD OPTIONS
@@ -69,8 +67,8 @@ Once you create a new group, the config used is the default one.
 
 All program configs are stored at:
 ```
-Windows:    ~\.mgtowArchive
-Linux:      ~/.config/mgtow-archive
+Windows:    ~\.contentArchiver
+Linux:      ~/.config/content-archiver
 ```
 You can share your config to another person (even groups configs), these files are universal, so you can share using a windows machine, and a linux machine will be able to use it. Be aware that if you copy the config from a person, you will lose your current config.
 
@@ -126,7 +124,7 @@ QBittorrent > "Tools" > "Preferences" > "Web UI"
 
 The program can do these operations:
 - Create a torrent from a downloaded channel.
-- List mgtow-archive torrents (using tags).
+- List content-archiver torrents (using tags).
 - Change authentication options.
 - Change trackers.
 

@@ -2,7 +2,9 @@
   <dictionary name="h0xt0n">
     <words>
       <w>archiver</w>
+      <w>avconv</w>
       <w>bestaudio</w>
+      <w>bestvideo</w>
       <w>bittorrent</w>
       <w>bools</w>
       <w>colorama</w>
