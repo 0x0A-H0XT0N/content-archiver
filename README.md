@@ -139,5 +139,5 @@ If you have any question or feature request, contact  **PhoenixK7PB#8422** at Di
 # BUGS
 
 If you find a bug, report to one of these places:
-* Contact PhoenixK7PB#8422 at Discord.
+* Contact PhoenixK7PB#8422 (discord id=258397376576749569) at Discord.
 * Create a issue at the github page project.
