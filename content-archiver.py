@@ -13,8 +13,6 @@
 #  ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝
 # https://github.com/PhoenixK7PB/content-archiver
 #
-# TODO: make a list of all possible bit sizes for the user to choose from
-# TODO: make shortcuts
 
 import base64
 import json
@@ -923,6 +921,64 @@ class YTConfig:
                 else:
                     return "Off"
 
+    class RateLimit:
+        def __init__(self, config_file=ConfigPath().get() + "master_config.json"):
+            self.config_file = config_file
+
+        def handler(self):
+            while True:
+                config = YTConfig(self.config_file).get()
+
+                clear()
+                print(color.red(color.bold("-------------------------RATE-LIMIT-------------------------")))
+                ratelimit = False
+                for option in config:
+                    if option == "ratelimit":
+                        ratelimit = True
+                if ratelimit:
+                    print("Current download rate limit is %s KB/s." % str(config["ratelimit"] // 1000))
+                    print("Type 'disable' to disable the download rate limit.")
+                else:
+                    print("Download rate limit is disabled.")
+                print("Type a new limit in KB/s.")
+                print(enter_to_return())
+                ratelimit_choice = str(input(">:"))
+                try:
+                    ratelimit_choice = int(ratelimit_choice)
+                except ValueError:
+                    if ratelimit_choice == "":
+                        break
+                    elif ratelimit_choice == "disable":
+                        del config["ratelimit"]
+                        YTConfig(self.config_file).update(config)
+                        continue
+                    else:
+                        clear()
+                        wait_input()
+                        continue
+                if ratelimit_choice == 0:
+                    print("Rate limit can't be 0.")
+                    wait_input()
+                    continue
+                elif ratelimit_choice != 0:
+                    config["ratelimit"] = ratelimit_choice * 1000
+                    YTConfig(self.config_file).update(config)
+                else:
+                    clear()
+                    wait_input()
+                    continue
+
+        def get(self):
+            config = YTConfig(self.config_file).get()
+            ratelimit = False
+            for option in config:
+                if option == "ratelimit":
+                    ratelimit = True
+            if ratelimit:
+                return str(config["ratelimit"] // 1000) + "KB/s"
+            else:
+                return "disabled"
+
     def __init__(self, config_file=ConfigPath().get() + "master_config.json"):
         self.config_file = config_file
         self.config = self.get()
@@ -996,14 +1052,23 @@ class YTConfig:
         while True:
             clear()
             print(color.red(color.bold("----------------------DOWNLOAD-OPTIONS----------------------")))
-            print(color.yellow(color.bold("filters")) + ") Set download filters      " + color.red(color.bold("|")))
-            print(color.yellow(color.bold("archive")) + ") Download archive options  " + color.red(color.bold("|")) +
+            print(color.yellow(color.bold("filters")) + ") Set download filters                     "
+                                                        "" + color.red(color.bold("|")))
+            print(color.yellow(color.bold("archive")) + ") Download archive options                 "
+                                                        "" + color.red(color.bold("|")) +
                   "  " + color.yellow(color.bold(self.DownloadArchive(self.config_file).state(raw=False))))
-            print(color.yellow(color.bold(" format")) + ") Set download format       " + color.red(color.bold("|")) +
+            print(color.yellow(color.bold(" format")) + ") Set download format                      "
+                                                        "" + color.red(color.bold("|")) +
                   "  " + color.yellow(color.bold(self.Format(self.config_file).get())))
-            print(color.yellow(color.bold(" others")) + ") On or Off options         " + color.red(color.bold("|")))
-            print(color.yellow(color.bold("  embed")) + ") Set embedding options     " + color.red(color.bold("|")))
-            print(color.yellow(color.bold("  reset")) + ") Reset config to default   " + color.red(color.bold("|")))
+            print(color.yellow(color.bold(" others")) + ") On or Off options                        "
+                                                        "" + color.red(color.bold("|")))
+            print(color.yellow(color.bold("  embed")) + ") Set embedding options                    "
+                                                        "" + color.red(color.bold("|")))
+            print(color.yellow(color.bold("  limit")) + ") Set download rate limit                  "
+                                                        "" + color.red(color.bold("|")) +
+                  "  " + color.yellow(color.bold(self.RateLimit(self.config_file).get())))
+            print(color.yellow(color.bold("  reset")) + ") Reset config to default                  "
+                                                        "" + color.red(color.bold("|")))
             print(enter_to_return())
             download_options_choice = str(input(">:"))
 
@@ -1019,6 +1084,8 @@ class YTConfig:
                 self.Filters(self.config_file).handler()
             elif download_options_choice == "embed":
                 self.PostProcessing(self.config_file).handler()
+            elif download_options_choice == "limit":
+                self.RateLimit(self.config_file).handler()
             elif download_options_choice == "reset":
                 clear()
                 print(color.yellow(color.bold("This will reset your config to default. ") +
